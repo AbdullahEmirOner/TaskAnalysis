@@ -54,6 +54,7 @@ public class AiService //: IAiService
 
         return responseText;
     }
+
     public AiDirectorateDto ParseAiResponse(string json)
     {
         if (string.IsNullOrWhiteSpace(json))

@@ -99,7 +99,6 @@ public class AnalysisController : ControllerBase
         try
         {
             var folderPath = _configuration["CsvSettings:FolderPath"];
-
             if (string.IsNullOrWhiteSpace(folderPath))
             {
                 return BadRequest("CSV klasör yolu tanımlı değil.");
@@ -122,16 +121,16 @@ public class AnalysisController : ControllerBase
             }
 
             var prompt = AiPromptBuilder.BuildDirectoratePrompt(selected);
-
             var aiResult = await _aiService.AnalyzeAsync(prompt);
-
             var parsed = _aiService.ParseAiResponse(aiResult);
 
             return Ok(parsed);
         }
         catch (Exception ex)
         {
+            // Burada loglama yapabilirsin:
             // _logger.LogError(ex, "AI analizi sırasında hata oluştu.");
+
             return StatusCode(500, "AI analizi sırasında beklenmeyen bir hata oluştu.");
         }
     }
