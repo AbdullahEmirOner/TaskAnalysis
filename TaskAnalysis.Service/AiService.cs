@@ -1,57 +1,69 @@
-﻿using System.Text.Json;
-using TaskAnalysis.Core.Interfaces;
+﻿using Microsoft.Extensions.Configuration;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using TaskAnalysis.Core.DTOs;
+
 
 namespace TaskAnalysis.Service;
 
-public class AiService : IAiService
+public class AiService //: IAiService
 {
-    public string Analyze(string prompt)
+    private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
+
+    public AiService(HttpClient httpClient, IConfiguration configuration)
     {
-        // Örnek veri --> ileride prompt'a göre dinamik üretilecek 
-        var analysis = new DirectorateAnalysisDto
+        _httpClient = httpClient;
+        _configuration = configuration;
+    }
+
+    public async Task<string> AnalyzeAsync(string prompt)
+    {
+        var apiKey = _configuration["OpenAI:ApiKey"];
+        //var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        // powershell --> setx OPENAI_API_KEY " "
+        var model = _configuration["OpenAI:Model"] ?? "gpt-4.1-mini";
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException("OpenAI API key tanımlı değil.");
+
+        _httpClient.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Bearer", apiKey);
+
+        var requestBody = new
         {
-            DirektorlukAnalizi = "Some tasks in this directorate can be supported by AI.",
-            Mudurlukler = new List<DepartmentAnalysisDto>
-            {
-                new DepartmentAnalysisDto
-                {
-                    Mudurluk = "Personnel",
-                    AiUygunluk = "Yes",
-                    OtomasyonOrani = 75,
-                    TahminiSaatHaftalik = 12,
-                    Oneri = "Candidate pre-screening and CV evaluation system"
-                },
-                new DepartmentAnalysisDto
-                {
-                    Mudurluk = "Training",
-                    AiUygunluk = "Partial",
-                    OtomasyonOrani = 50,
-                    TahminiSaatHaftalik = 8,
-                    Oneri = "Training planning support assistant"
-                }
-            }
+            model = model,
+            input = prompt
         };
 
-        // JSON olarak serialize
-        return JsonSerializer.Serialize(analysis, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
+        var json = JsonSerializer.Serialize(requestBody);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        using var response = await _httpClient.PostAsync("https://api.openai.com/v1/responses", content);
+
+        var responseText = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"OpenAI hatası: {response.StatusCode} - {responseText}");
+
+        using var document = JsonDocument.Parse(responseText);
+
+        if (document.RootElement.TryGetProperty("output_text", out var outputText))
+            return outputText.GetString() ?? string.Empty;
+
+        return responseText;
     }
-}
+    public List<AiDepartmentDto> ParseAiResponse(string json)
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
-// DTO'lar
-public class DirectorateAnalysisDto
-{
-    public string DirektorlukAnalizi { get; set; }
-    public List<DepartmentAnalysisDto> Mudurlukler { get; set; }
-}
+        var result = JsonSerializer.Deserialize<AiDirectorateDto>(json, options);
 
-public class DepartmentAnalysisDto
-{
-    public string Mudurluk { get; set; }
-    public string AiUygunluk { get; set; }
-    public int OtomasyonOrani { get; set; }
-    public int TahminiSaatHaftalik { get; set; }
-    public string Oneri { get; set; }
+        return result?.Departments ?? new List<AiDepartmentDto>();
+    }
+
 }

@@ -10,18 +10,42 @@ public static class AiPromptBuilder
         var sb = new StringBuilder();
 
         sb.AppendLine("You are an AI consultant specializing in corporate task analysis.");
+        sb.AppendLine("Your role is to analyze directorate and department-level tasks and provide actionable insights.");
+        sb.AppendLine();
         sb.AppendLine("Analyze the following directorate data.");
-        sb.AppendLine("For each department, answer the following questions:");
-        sb.AppendLine("1. Which of these tasks can be performed with AI?");
-        sb.AppendLine("2. For each task, what is the estimated automation rate (%)?");
-        sb.AppendLine("3. What is the estimated weekly time workload for these tasks?");
-        sb.AppendLine("4. What AI project ideas can be proposed to improve efficiency?");
-        sb.AppendLine("Cevapları Türkçe üret.");
+        sb.AppendLine("For each department, answer the following questions in detail:");
+        sb.AppendLine("1. Identify which specific tasks can be performed with AI.");
+        sb.AppendLine("2. For each task, estimate the automation rate (%) realistically.");
+        sb.AppendLine("3. Estimate the weekly time workload (in hours) for each task.");
+        sb.AppendLine("4. Propose concrete AI project ideas that could improve efficiency and reduce workload.");
         sb.AppendLine();
-        sb.AppendLine("Provide the answer in structured JSON format.");
-
+        sb.AppendLine("Output requirements:");
+        sb.AppendLine("- Provide the answer ONLY in valid JSON.");
+        sb.AppendLine("- Use English JSON keys exactly as specified.");
+        sb.AppendLine("- Write all explanations, recommendations, and text values in Turkish.");
+        sb.AppendLine("- Do not include any text outside the JSON.");
         sb.AppendLine();
-
+        sb.AppendLine("Use this exact JSON structure:");
+        sb.AppendLine("""
+{
+  "directorate": "string",
+  "departments": [
+    {
+      "department": "string",
+      "analyses": [
+        {
+          "task": "string",
+          "aiSuitability": "string",
+          "automationRate": 0,
+          "estimatedWeeklyHours": 0,
+          "recommendation": "string"
+        }
+      ]
+    }
+  ]
+}
+""");
+        sb.AppendLine();
         sb.AppendLine($"Direktörlük: {summary.Direktorluk}");
         sb.AppendLine($"Toplam Kayıt Sayısı: {summary.ToplamKayitSayisi}");
         sb.AppendLine($"Müdürlük Sayısı: {summary.MudurlukSayisi}");

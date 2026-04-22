@@ -11,7 +11,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<ICsvReaderService, CsvTaskReaders>();
 builder.Services.AddScoped<IAnalysisService, AnalysisService>();
-builder.Services.AddScoped<IAiService, AiService>();
+builder.Services.AddScoped<IAiMockService, AiMockService>();
+//builder.Services.AddHttpClient<IAiService, AiService>();
 
 var app = builder.Build();
 
@@ -22,9 +23,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
