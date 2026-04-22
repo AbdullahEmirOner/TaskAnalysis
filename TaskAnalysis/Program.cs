@@ -1,5 +1,6 @@
 using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.DAL.Readers;
+using TaskAnalysis.Service;
 using TaskAnalysis.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<ICsvReaderService, CsvTaskReaders>();
 builder.Services.AddScoped<IAnalysisService, AnalysisService>();
+builder.Services.AddScoped<IAiService, AiService>();
 
 var app = builder.Build();
 

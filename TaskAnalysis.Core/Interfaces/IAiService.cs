@@ -10,5 +10,6 @@ namespace TaskAnalysis.Core.Interfaces
     public interface IAiService
     {
         //Task<AiDirectorateAnalysisResultDto> AnalyzeDirectorateAsync(AiAnalysisRequestDto request);
+        string Analyze(string prompt);
     }
 }

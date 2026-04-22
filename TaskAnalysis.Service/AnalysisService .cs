@@ -62,6 +62,27 @@ public class AnalysisService : IAnalysisService
         .ToList();
 
         return result;
+        /*BuildDirectoraterSummaries
+         Direktorluk → Grup anahtarı (Birim adı)
+
+         ToplamKayitSayisi → O direktörlükteki toplam kayıt sayısı
+         
+         MudurlukSayisi → O direktörlükteki farklı müdürlüklerin sayısı
+         
+         Mudurlukler → Bir List<DepartmentSummaryDto>
+         
+         Her müdürlük için:
+         
+         Mudurluk → Müdürlük adı
+         
+         KayitSayisi → O müdürlükteki kayıt sayısı
+         
+         Amaclar → Distinct ve sıralı amaç listesi
+         
+         Yetkinlikler → Distinct ve sıralı yetki listesi
+         
+         AnaSorumluluklar → Distinct ve sıralı ana sorumluluk listesi
+         */
     }
 
     public ChatbotContextDto BuildChatbotContext(List<DirectorateSummaryDto> summaries)

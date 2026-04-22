@@ -11,10 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\TaskAnalysis.Core\TaskAnalysis.Core.csproj" />
     <ProjectReference Include="..\TaskAnalysis.DAL\TaskAnalysis.DAL.csproj" />
     <ProjectReference Include="..\TaskAnalysis.Service\TaskAnalysis.Service.csproj" />
