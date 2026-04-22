@@ -11,6 +11,7 @@ namespace TaskAnalysis.Core.Interfaces
     public interface IAnalysisService
     {
         List<DirectorateSummaryDto> BuildDirectoraterSummaries(List<TaskRecord> records);
-        ChatbotContextDto BuildChatbotContext(List<DirectorateSummaryDto> summeries);
+        string BuildChatbotContext(List<DirectorateSummaryDto> summeries);
+        List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries);
     }
 }

@@ -54,16 +54,36 @@ public class AiService //: IAiService
 
         return responseText;
     }
-    public List<AiDepartmentDto> ParseAiResponse(string json)
+    public AiDirectorateDto ParseAiResponse(string json)
     {
-        var options = new JsonSerializerOptions
+        if (string.IsNullOrWhiteSpace(json))
         {
-            PropertyNameCaseInsensitive = true
-        };
+            return CreateFallback("Unknown");
+        }
 
-        var result = JsonSerializer.Deserialize<AiDirectorateDto>(json, options);
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
 
-        return result?.Departments ?? new List<AiDepartmentDto>();
+            var result = JsonSerializer.Deserialize<AiDirectorateDto>(json, options);
+
+            return result ?? CreateFallback("Unknown");
+        }
+        catch
+        {
+            return CreateFallback("ParseError");
+        }
     }
 
+    private AiDirectorateDto CreateFallback(string directorateName)
+    {
+        return new AiDirectorateDto
+        {
+            Directorate = directorateName,
+            Departments = new List<AiDepartmentDto>()
+        };
+    }
 }

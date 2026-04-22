@@ -79,4 +79,41 @@ public static class AiPromptBuilder
 
         return sb.ToString();
     }
+    public static string BuildUniqueTasksPrompt(List<UniqueTaskDto> tasks)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("You are an automation consultant.");
+        sb.AppendLine("Analyze the following unique business tasks.");
+        sb.AppendLine("For each task, determine the best solution type.");
+        sb.AppendLine("Possible solution types: AI, RPA, Hybrid, Other.");
+        sb.AppendLine("Return ONLY valid JSON.");
+        sb.AppendLine("Use English JSON keys exactly as specified below.");
+        sb.AppendLine("Write recommendation text values in Turkish.");
+        sb.AppendLine();
+        sb.AppendLine("Use this exact JSON structure:");
+        sb.AppendLine("""
+    [
+      {
+        "task": "string",
+        "departments": ["string"],
+        "bestSolution": "string",
+        "automationRate": 0,
+        "recommendation": "string"
+      }
+    ]
+    """);
+        sb.AppendLine();
+
+        sb.AppendLine("Tasks:");
+        foreach (var task in tasks)
+        {
+            sb.AppendLine($"Task: {task.Task}");
+            sb.AppendLine($"Departments: {string.Join(", ", task.Departments)}");
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
+
 }

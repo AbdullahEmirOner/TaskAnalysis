@@ -90,4 +90,9 @@ public class AiMockService : IAiMockService
 
         return result?.Departments ?? new List<AiDepartmentDto>();
     }
+
+    AiDirectorateDto IAiMockService.ParseAiResponse(string json)
+    {
+        throw new NotImplementedException();
+    }
 }

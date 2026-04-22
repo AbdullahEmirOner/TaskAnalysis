@@ -97,4 +97,39 @@ public class AnalysisService : IAnalysisService
     {
         return !string.IsNullOrWhiteSpace(value);
     }
+
+    string IAnalysisService.BuildChatbotContext(List<DirectorateSummaryDto> summeries)
+    {
+        throw new NotImplementedException();
+    }
+
+    public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries)
+    {
+        if (summaries == null || summaries.Count == 0)
+            return new List<UniqueTaskDto>();
+
+        var result = summaries
+            .SelectMany(d => d.Mudurlukler)
+            .SelectMany(m => m.AnaSorumluluklar.Select(task => new
+            {
+                Task = task,
+                Department = m.Mudurluk
+            }))
+            .Where(x => !string.IsNullOrWhiteSpace(x.Task))
+            .GroupBy(x => x.Task.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(g => new UniqueTaskDto
+            {
+                Task = g.First().Task,
+                Departments = g.Select(x => x.Department)
+                               .Where(x => !string.IsNullOrWhiteSpace(x))
+                               .Distinct(StringComparer.OrdinalIgnoreCase)
+                               .OrderBy(x => x)
+                               .ToList()
+            })
+            .OrderBy(x => x.Task)
+            .ToList();
+
+        return result;
+    }
+
 }
