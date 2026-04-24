@@ -38,6 +38,7 @@ namespace TaskAnalysis.DAL.Readers
                  (örneğin tarih, sayı formatları kültüre göre değişmesin diye
                  */
                 {
+                    Delimiter = ";",
                     HeaderValidated = null,
                     MissingFieldFound = null,
                     BadDataFound = null,

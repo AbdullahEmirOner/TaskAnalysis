@@ -1,4 +1,5 @@
-﻿using TaskAnalysis.Core.DTOs;
+﻿using System.Text;
+using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
 
@@ -85,22 +86,60 @@ public class AnalysisService : IAnalysisService
          */
     }
 
-    public ChatbotContextDto BuildChatbotContext(List<DirectorateSummaryDto> summaries)
+ /*   public ChatbotContextDto BuildChatbotContext(List<DirectorateSummaryDto> summaries)
     {
         return new ChatbotContextDto
         {
             DirektorlukOzetleri = summaries ?? new List<DirectorateSummaryDto>()
         };
-    }
+    }*/
 
     private static bool IsValidText(string? value)
     {
         return !string.IsNullOrWhiteSpace(value);
     }
 
-    string IAnalysisService.BuildChatbotContext(List<DirectorateSummaryDto> summeries)
+    public string BuildChatbotContext(List<DirectorateSummaryDto> summaries)
     {
-        throw new NotImplementedException();
+        if (summaries == null || summaries.Count == 0)
+            return "Analiz edilecek veri bulunamadı.";
+
+        var sb = new StringBuilder();
+
+        sb.AppendLine("Şirket görev analiz verileri:");
+        sb.AppendLine();
+
+        foreach (var directorate in summaries)
+        {
+            sb.AppendLine($"Direktörlük: {directorate.Direktorluk}");
+            sb.AppendLine($"Toplam Kayıt Sayısı: {directorate.ToplamKayitSayisi}");
+            sb.AppendLine($"Müdürlük Sayısı: {directorate.MudurlukSayisi}");
+            sb.AppendLine();
+
+            foreach (var department in directorate.Mudurlukler)
+            {
+                sb.AppendLine($"Müdürlük: {department.Mudurluk}");
+                sb.AppendLine($"Kayıt Sayısı: {department.KayitSayisi}");
+
+                sb.AppendLine("Amaçlar:");
+                foreach (var amac in department.Amaclar)
+                    sb.AppendLine($"- {amac}");
+
+                sb.AppendLine("Yetkinlikler:");
+                foreach (var yetkinlik in department.Yetkinlikler)
+                    sb.AppendLine($"- {yetkinlik}");
+
+                sb.AppendLine("Ana Sorumluluklar:");
+                foreach (var sorumluluk in department.AnaSorumluluklar)
+                    sb.AppendLine($"- {sorumluluk}");
+
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("--------------------------------");
+        }
+
+        return sb.ToString();
     }
 
     public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries)

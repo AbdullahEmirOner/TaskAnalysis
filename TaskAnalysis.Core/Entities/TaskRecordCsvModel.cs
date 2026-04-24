@@ -9,7 +9,7 @@ namespace TaskAnalysis.Core.Entities
     public class TaskRecordCsvModel
     {
         public string? SicilNo { get; set; } = string.Empty;
-        public string? Birim { get; set; } = string.Empty;
+    //    public string? Birim { get; set; } = string.Empty;
         public string? Mudurluk { get; set; } = string.Empty;
         public string? Amac { get; set; } = string.Empty;
         public string? Yetki { get; set; } = string.Empty;
