@@ -16,4 +16,8 @@
     <ProjectReference Include="..\TaskAnalysis.Service\TaskAnalysis.Service.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\CSV\" />
+  </ItemGroup>
+
 </Project>
