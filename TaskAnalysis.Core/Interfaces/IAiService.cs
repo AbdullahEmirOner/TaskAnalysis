@@ -13,6 +13,6 @@ namespace TaskAnalysis.Core.Interfaces
         //string Analyze(string prompt); ---> Mock Ai Service
         //List<AiDepartmentDto> ParseAiResponse(string json);
         Task<string> AnalyzeAsync(string prompt);
-        AiDirectorateDto ParseAiResponse(string json);
+        public List<UniqueTaskDto> ParseUniqueTasks(string json);
     }
 }

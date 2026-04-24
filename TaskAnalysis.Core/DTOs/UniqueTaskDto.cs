@@ -18,5 +18,5 @@ namespace TaskAnalysis.Core.DTOs
 
         public string Recommendation { get; set; } = string.Empty;
     }
-
 }
+

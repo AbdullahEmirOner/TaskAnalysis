@@ -55,12 +55,10 @@ public class AiService //: IAiService
         return responseText;
     }
 
-    public AiDirectorateDto ParseAiResponse(string json)
+    public List<UniqueTaskDto> ParseUniqueTasks(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
-        {
-            return CreateFallback("Unknown");
-        }
+            return new List<UniqueTaskDto>();
 
         try
         {
@@ -69,15 +67,16 @@ public class AiService //: IAiService
                 PropertyNameCaseInsensitive = true
             };
 
-            var result = JsonSerializer.Deserialize<AiDirectorateDto>(json, options);
+            var result = JsonSerializer.Deserialize<List<UniqueTaskDto>>(json, options);
 
-            return result ?? CreateFallback("Unknown");
+            return result ?? new List<UniqueTaskDto>();
         }
         catch
         {
-            return CreateFallback("ParseError");
+            return new List<UniqueTaskDto>();
         }
     }
+
 
     private AiDirectorateDto CreateFallback(string directorateName)
     {

@@ -5,80 +5,42 @@ namespace TaskAnalysis.Service.Builders;
 
 public static class AiPromptBuilder
 {
-    public static string BuildDirectoratePrompt(DirectorateSummaryDto summary)
+    public static string BuildNormalizeTasksPrompt(List<UniqueTaskDto> tasks)
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("You are an AI consultant specializing in corporate task analysis.");
-        sb.AppendLine("Your role is to analyze directorate and department-level tasks and provide actionable insights.");
-        sb.AppendLine();
-        sb.AppendLine("Analyze the following directorate data.");
-        sb.AppendLine("For each department, answer the following questions in detail:");
-        sb.AppendLine("1. Identify which specific tasks can be performed with AI.");
-        sb.AppendLine("2. For each task, estimate the automation rate (%) realistically.");
-        sb.AppendLine("3. Estimate the weekly time workload (in hours) for each task.");
-        sb.AppendLine("4. Propose concrete AI project ideas that could improve efficiency and reduce workload.");
+        sb.AppendLine("You are a data normalization expert.");
+        sb.AppendLine("Your role is to analyze and group similar business tasks.");
+        sb.AppendLine("Tasks may contain typos, Turkish character differences, or different wording.");
+        sb.AppendLine("Merge tasks that have the same meaning into a single normalized task.");
         sb.AppendLine();
         sb.AppendLine("Output requirements:");
-        sb.AppendLine("- Provide the answer ONLY in valid JSON.");
+        sb.AppendLine("- Return ONLY valid JSON.");
         sb.AppendLine("- Use English JSON keys exactly as specified.");
-        sb.AppendLine("- Write all explanations, recommendations, and text values in Turkish.");
-        sb.AppendLine("- Do not include any text outside the JSON.");
+        sb.AppendLine("- Write all task names in Turkish.");
         sb.AppendLine();
-        sb.AppendLine("Use this exact JSON structure:");
+        sb.AppendLine("Use this exact JSON format:");
         sb.AppendLine("""
-{
-  "directorate": "string",
-  "departments": [
-    {
-      "department": "string",
-      "analyses": [
-        {
-          "task": "string",
-          "aiSuitability": "string",
-          "automationRate": 0,
-          "estimatedWeeklyHours": 0,
-          "recommendation": "string"
-        }
-      ]
-    }
-  ]
-}
-""");
+       [
+         {
+           "task": "normalized task name",
+           "departments": ["department1", "department2"]
+         }
+       ]
+       """);
         sb.AppendLine();
-        sb.AppendLine($"Direktörlük: {summary.Direktorluk}");
-        sb.AppendLine($"Toplam Kayıt Sayısı: {summary.ToplamKayitSayisi}");
-        sb.AppendLine($"Müdürlük Sayısı: {summary.MudurlukSayisi}");
-        sb.AppendLine();
+        sb.AppendLine("Tasks to analyze:");
 
-        foreach (var mudurluk in summary.Mudurlukler)
+        foreach (var task in tasks)
         {
-            sb.AppendLine($"Müdürlük: {mudurluk.Mudurluk}");
-            sb.AppendLine($"Kayıt Sayısı: {mudurluk.KayitSayisi}");
-
-            sb.AppendLine("Amaçlar:");
-            foreach (var amac in mudurluk.Amaclar)
-            {
-                sb.AppendLine($"- {amac}");
-            }
-
-            sb.AppendLine("Yetkinlikler:");
-            foreach (var yetkinlik in mudurluk.Yetkinlikler)
-            {
-                sb.AppendLine($"- {yetkinlik}");
-            }
-
-            sb.AppendLine("Ana Sorumluluklar:");
-            foreach (var sorumluluk in mudurluk.AnaSorumluluklar)
-            {
-                sb.AppendLine($"- {sorumluluk}");
-            }
-
+            sb.AppendLine($"- Task: {task.Task}");
+            sb.AppendLine($"  Departments: {string.Join(", ", task.Departments)}");
             sb.AppendLine();
         }
 
         return sb.ToString();
     }
+
     public static string BuildUniqueTasksPrompt(List<UniqueTaskDto> tasks)
     {
         var sb = new StringBuilder();
@@ -112,6 +74,29 @@ public static class AiPromptBuilder
             sb.AppendLine($"Departments: {string.Join(", ", task.Departments)}");
             sb.AppendLine();
         }
+
+        return sb.ToString();
+    }
+
+    public static string BuildChatbotPrompt(string context, string question)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("You are a corporate task analysis assistant.");
+        sb.AppendLine("Your role is to answer the user's question using ONLY the provided company task data.");
+        sb.AppendLine("Strict rules:");
+        sb.AppendLine("- Do not use external knowledge.");
+        sb.AppendLine("- If the answer cannot be found in the data, respond: 'Verilen veriler bu soruyu yanıtlamak için yeterli değil.'");
+        sb.AppendLine("- Write the entire answer in Turkish.");
+        sb.AppendLine("- Be clear, concise, and professional.");
+        sb.AppendLine();
+        sb.AppendLine("Company task data:");
+        sb.AppendLine(context);
+        sb.AppendLine();
+        sb.AppendLine("User question:");
+        sb.AppendLine(question);
+        sb.AppendLine();
+        sb.AppendLine("Answer:");
 
         return sb.ToString();
     }
