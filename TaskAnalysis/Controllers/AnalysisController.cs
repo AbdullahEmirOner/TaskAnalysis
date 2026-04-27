@@ -12,14 +12,14 @@ public class AnalysisController : ControllerBase
     private readonly ICsvReaderService _csvReaderService;
     private readonly IAnalysisService _analysisService;
     private readonly IConfiguration _configuration;
-    private readonly IAiMockService _aiService;
+    private readonly IAiService _aiService;
   //  private readonly IAiService _aiService;
 
     public AnalysisController(
     ICsvReaderService csvReaderService,
     IAnalysisService analysisService,
     IConfiguration configuration,
-    IAiMockService aiService) // IAiMockService aiService
+    IAiService aiService) // IAiMockService aiService
     {
         _csvReaderService = csvReaderService;
         _analysisService = analysisService;
@@ -188,11 +188,8 @@ public class AnalysisController : ControllerBase
     }
 
     [HttpPost("chatbot-ask")]
-    public async Task<IActionResult> AskChatbot([FromBody] ChatbotQuestionDto request)
+    public async Task<IActionResult> Ask([FromBody] ChatbotQuestionDto request)
     {
-        if (request == null || string.IsNullOrWhiteSpace(request.Question))
-            return BadRequest("Soru boş olamaz.");
-
         var folderPath = _configuration["CsvSettings:FolderPath"];
 
         if (string.IsNullOrWhiteSpace(folderPath))
@@ -200,17 +197,26 @@ public class AnalysisController : ControllerBase
 
         var records = _csvReaderService.ReadAllCsv(folderPath);
         var summaries = _analysisService.BuildDirectoraterSummaries(records);
-        var chatbotContext = _analysisService.BuildChatbotContext(summaries);
+        var context = _analysisService.BuildChatbotContext(summaries);
+        var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question);
+        var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
-        var prompt = AiPromptBuilder.BuildChatbotPrompt(chatbotContext, request.Question);
+        var cleaned = aiResponse
+        .Replace("```json", "")
+        .Replace("```", "")
+        .Trim();
 
-        var aiAnswer = await _aiService.AnalyzeAsync(prompt);
+        var parsed = _aiService.ParseUniqueTasks(cleaned);
 
-        return Ok(new
+        if (parsed == null || !parsed.Any())
         {
-            question = request.Question,
-            answer = aiAnswer
-        });
+            return Ok(new
+            {
+                raw = aiResponse
+            });
+        }
+
+        return Ok(parsed);
     }
 
 }

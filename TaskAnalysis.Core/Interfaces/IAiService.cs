@@ -7,7 +7,7 @@ using TaskAnalysis.Core.DTOs;
 
 namespace TaskAnalysis.Core.Interfaces
 {
-    public interface IAiMockService
+    public interface IAiService
     {
         //Task<AiDirectorateAnalysisResultDto> AnalyzeDirectorateAsync(AiAnalysisRequestDto request);
         //string Analyze(string prompt); ---> Mock Ai Service

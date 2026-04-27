@@ -6,7 +6,7 @@ namespace TaskAnalysis.Service;
 
 // --------------------------------------------------------------------------------------- Mock Service -----------------------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-public class AiMockService : IAiMockService
+/*public class AiMockService //: IAiMockService
 {
     public Task<string> AnalyzeAsync(string prompt)
     {
@@ -95,4 +95,4 @@ public class AiMockService : IAiMockService
     {
         throw new NotImplementedException();
     }
-}
+}*/

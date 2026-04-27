@@ -57,7 +57,7 @@ namespace TaskAnalysis.DAL.Readers
                  Dispose demek, dosya bağlantısını kapatmak ve belleği serbest bırakmak. 
                  Normalde reader.Dispose() veya reader.Close() çağırman gerekirken, using var bunu senin yerine yapıyor.
                  */
-                var rows = csvReader.GetRecords<TaskRecordCsvModel>().ToList();
+                var rows = csvReader.GetRecords<TaskRecordCsvModel>().ToList(); // prop'larla CSV başlıkları eşleşmeli
                 /* csvReader.GetRecords<TaskRecordCsvModel>()  
                  CsvHelper kütüphanesinin metodu. 
                  CSV dosyasındaki satırları okuyor ve her satırı TaskRecordCsvModel tipindeki bir nesneye dönüştürüyor. 
