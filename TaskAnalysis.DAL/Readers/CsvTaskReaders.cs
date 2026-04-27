@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
+using System.Text;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
 
@@ -105,5 +106,39 @@ namespace TaskAnalysis.DAL.Readers
                 .Replace("-", " ")
                 .Trim();
         }
+
+        public List<TaskRecord> ReadCsv(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return new List<TaskRecord>();
+
+            var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                Delimiter = ";",
+                HeaderValidated = null,
+                MissingFieldFound = null,
+                BadDataFound = null
+            };
+
+            using var reader = new StreamReader(filePath, Encoding.UTF8);
+            using var csv = new CsvHelper.CsvReader(reader, config);
+
+            var records = csv.GetRecords<TaskRecordCsvModel>()
+            .Select(x => new TaskRecord
+            {
+                SicilNo = x.SicilNo ?? string.Empty,
+              //  Birim = x.Birim ?? string.Empty,
+                Mudurluk = x.Mudurluk ?? string.Empty,
+                Amac = x.Amac ?? string.Empty,
+                Yetki = x.Yetki ?? string.Empty,
+                AnaSorumluluk = x.AnaSorumluluk ?? string.Empty,
+                SourceFile = Path.GetFileName(filePath)
+            })
+            .ToList();
+
+            return records;
+        }
+
+
     }
 }

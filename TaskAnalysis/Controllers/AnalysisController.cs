@@ -190,33 +190,69 @@ public class AnalysisController : ControllerBase
     [HttpPost("chatbot-ask")]
     public async Task<IActionResult> Ask([FromBody] ChatbotQuestionDto request)
     {
+        if (string.IsNullOrWhiteSpace(request.Question))
+            return BadRequest("Soru boş olamaz.");
+
+        if (string.IsNullOrWhiteSpace(request.FileName))
+            return BadRequest("CSV dosyası seçilmelidir.");
+
         var folderPath = _configuration["CsvSettings:FolderPath"];
 
         if (string.IsNullOrWhiteSpace(folderPath))
             return BadRequest("CSV klasör yolu tanımlı değil.");
 
-        var records = _csvReaderService.ReadAllCsv(folderPath);
+        var safeFileName = Path.GetFileName(request.FileName);
+        var filePath = Path.Combine(folderPath, safeFileName);
+
+        if (!System.IO.File.Exists(filePath))
+            return NotFound("Seçilen CSV dosyası bulunamadı.");
+
+        var records = _csvReaderService.ReadCsv(filePath);
+        return Ok(new
+        {
+            fileName = safeFileName,
+            filePath = filePath,
+            exists = System.IO.File.Exists(filePath),
+            recordCount = records.Count,
+            firstRecord = records.FirstOrDefault(),
+            firstAnaSorumluluk = records.FirstOrDefault()?.AnaSorumluluk
+        });
+
+        if (records == null || records.Count == 0)
+            return BadRequest("CSV okundu ama kayıt bulunamadı.");
+
         var summaries = _analysisService.BuildDirectoraterSummaries(records);
         var context = _analysisService.BuildChatbotContext(summaries);
+
         var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question);
+
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
-        var cleaned = aiResponse
-        .Replace("```json", "")
-        .Replace("```", "")
-        .Trim();
-
-        var parsed = _aiService.ParseUniqueTasks(cleaned);
-
-        if (parsed == null || !parsed.Any())
+        return Ok(new
         {
-            return Ok(new
-            {
-                raw = aiResponse
-            });
-        }
+            fileName = safeFileName,
+            question = request.Question,
+            answer = aiResponse
+        });
+    }
 
-        return Ok(parsed);
+
+    [HttpGet("csv-files")]
+    public IActionResult GetCsvFiles()
+    {
+        var folderPath = _configuration["CsvSettings:FolderPath"];
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            return BadRequest("CSV klasör yolu tanımlı değil.");
+
+        if (!Directory.Exists(folderPath))
+            return NotFound("CSV klasörü bulunamadı.");
+
+        var files = Directory.GetFiles(folderPath, "*.csv")
+        .Select(Path.GetFileName)
+        .ToList();
+
+        return Ok(files);
     }
 
 }
