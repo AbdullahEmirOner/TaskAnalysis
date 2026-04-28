@@ -95,7 +95,7 @@ public static class AiPromptBuilder
         sb.AppendLine("Your role is to answer the user's question using ONLY the provided company task data.");
         sb.AppendLine("Strict rules:");
         sb.AppendLine("- Do not use external knowledge.");
-        sb.AppendLine("- If the answer cannot be found in the data, respond: 'Verilen veriler bu soruyu yanıtlamak için yeterli değil.'");
+        sb.AppendLine("Provide your answer below. If partial information exists, explain what can be inferred and what is missing.");
         sb.AppendLine("- Write the entire answer in Turkish.");
         sb.AppendLine("- Be clear, concise, and professional.");
         sb.AppendLine();
