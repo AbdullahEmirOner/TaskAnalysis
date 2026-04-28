@@ -83,7 +83,6 @@ public static class AiPromptBuilder
         return sb.ToString();
     }
 
-
     public static string BuildChatbotPrompt(string context, string question)
     {
         var sb = new StringBuilder();
