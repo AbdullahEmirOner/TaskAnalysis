@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNetlify", policy =>
     {
-        policy.WithOrigins("http://gorevtn.netlify.app",
+        policy.WithOrigins("https://gorevtn.netlify.app",
             "https://localhost:3000")
         .AllowAnyHeader()
         .AllowAnyMethod();
