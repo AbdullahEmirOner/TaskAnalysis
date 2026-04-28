@@ -52,6 +52,7 @@ public static class AiPromptBuilder
         sb.AppendLine("Estimate the automation rate (%).");
         sb.AppendLine("Write recommendation text values in Turkish.");
         sb.AppendLine("If there is a similar real-world project already implemented, include its name and a reference link.");
+        sb.AppendLine("If no similar project exists, explicitly write 'No similar project found' for both name and link.");
         sb.AppendLine("Return ONLY valid JSON.");
         sb.AppendLine("Use English JSON keys exactly as specified below.");
         sb.AppendLine();
@@ -82,6 +83,7 @@ public static class AiPromptBuilder
 
         return sb.ToString();
     }
+
 
     public static string BuildChatbotPrompt(string context, string question)
     {

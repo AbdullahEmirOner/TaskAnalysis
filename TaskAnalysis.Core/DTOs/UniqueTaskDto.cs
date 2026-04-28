@@ -17,6 +17,12 @@ namespace TaskAnalysis.Core.DTOs
         public int AutomationRate { get; set; }
 
         public string Recommendation { get; set; } = string.Empty;
+
+        public string ProjectIdea { get; set; }
+
+        public string SimilarProjectName { get; set; }
+
+        public string SimilarProjectLink { get; set; }
     }
 }
 
