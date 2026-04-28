@@ -18,9 +18,9 @@ builder.Services.AddHttpClient<IAiService, AiService>();
 //builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReact", policy =>
+    options.AddPolicy("AllowNetlify", policy =>
     {
-        policy.WithOrigins("http://localhost:3000",
+        policy.WithOrigins("http://gorevtn.netlify.app",
             "https://localhost:3000")
         .AllowAnyHeader()
         .AllowAnyMethod();
@@ -34,7 +34,7 @@ app.UseSwaggerUI();
 
 
 app.UseHttpsRedirection();
-app.UseCors("AllowReact");
+app.UseCors("AllowNetlify");
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
