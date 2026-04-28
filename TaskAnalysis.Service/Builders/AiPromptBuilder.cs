@@ -48,7 +48,9 @@ public static class AiPromptBuilder
         sb.AppendLine("You are an automation consultant.");
         sb.AppendLine("Analyze the following unique business tasks.");
         sb.AppendLine("For each task, propose a concrete automation project idea.");
-        sb.AppendLine("Determine the best solution type (AI, RPA, Hybrid, Other).");
+        sb.AppendLine("For each task, determine the best solution type.");
+       // sb.AppendLine("Possible solution types: AI, RPA, Hybrid, Other.");
+        sb.AppendLine("If none of these fit well, propose a new solution type and explain it.");
         sb.AppendLine("Estimate the automation rate (%).");
         sb.AppendLine("Write recommendation text values in Turkish.");
         sb.AppendLine("If there is a similar real-world project already implemented, include its name and a reference link.");

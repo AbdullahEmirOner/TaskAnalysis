@@ -9,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<ICsvReaderService, CsvTaskReaders>();
 builder.Services.AddScoped<IAnalysisService, AnalysisService>();
 builder.Services.AddHttpClient<IAiService, AiService>();

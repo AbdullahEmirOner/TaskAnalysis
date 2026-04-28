@@ -9,5 +9,6 @@ namespace TaskAnalysis.Core.DTOs
     public class ChatbotQuestionDto
     {
         public string Question { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
     }
 }

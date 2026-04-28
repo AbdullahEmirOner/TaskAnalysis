@@ -145,6 +145,54 @@ namespace TaskAnalysis.DAL.Readers
                 .Replace("-", " ")
                 .Trim();
         }
+
+        public List<TaskRecord> ReadCsv(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                throw new ArgumentException("Dosya yolu boş olamaz", nameof(filePath));
+
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("CSV dosyası bulunamadı: " + filePath);
+
+            var allRecord = new List<TaskRecord>();
+            var sourceFile = Path.GetFileName(filePath);
+            var direktorluk = GetDirektorlukFromFileName(sourceFile);
+
+            using var reader = new StreamReader(filePath);
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                Delimiter = ";",
+                HeaderValidated = null,
+                MissingFieldFound = null,
+                BadDataFound = null,
+                PrepareHeaderForMatch = args => args.Header.Trim()
+            };
+
+            using var csvReader = new CsvReader(reader, config);
+            var rows = csvReader.GetRecords<TaskRecordCsvModel>().ToList();
+
+            foreach (var row in rows)
+            {
+                var record = new TaskRecord
+                {
+                    SicilNo = row.SicilNo?.Trim() ?? string.Empty,
+                    Birim = direktorluk,
+                    Mudurluk = row.Mudurluk?.Trim() ?? string.Empty,
+                    Amac = row.Amac?.Trim() ?? string.Empty,
+                    Yetki = row.Yetki?.Trim() ?? string.Empty,
+                    AnaSorumluluk = row.AnaSorumluluk?.Trim() ?? string.Empty,
+                    SourceFile = sourceFile
+                };
+
+                if (IsMeaningful(record))
+                {
+                    allRecord.Add(record);
+                }
+            }
+
+            return allRecord;
+        }
+
     }
 }
 /*AKIŞ

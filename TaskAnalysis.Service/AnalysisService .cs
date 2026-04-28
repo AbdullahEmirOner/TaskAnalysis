@@ -1,12 +1,28 @@
-﻿using System.Text;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
+using System.Text;
 using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Service.Builders;
 
 namespace TaskAnalysis.Service.Services;
 
 public class AnalysisService : IAnalysisService
 {
+    private readonly ICsvReaderService _csvReaderService;
+    private readonly IAiService _aiService;
+    private readonly IMemoryCache _cache;
+    private readonly IConfiguration _configuration;
+
+    public AnalysisService(ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
+    {
+        _csvReaderService = csvReaderService;
+        _aiService = aiService;
+        _configuration = configuration;
+        _cache = cache;
+    }
+
     public List<DirectorateSummaryDto> BuildDirectoraterSummaries(List<TaskRecord> records)
     {
         if (records == null || records.Count == 0)
@@ -171,4 +187,76 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
+    public List<TaskRecord> GetRelevantRecords(List<TaskRecord> records, string question, int maxCount = 50)
+    {
+        if (records == null || records.Count == 0)
+            return new List<TaskRecord>();
+
+        if (string.IsNullOrWhiteSpace(question))
+            return records.Take(maxCount).ToList();
+
+        var keywords = question
+        .ToLower()
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Where(x => x.Length > 2)
+        .Distinct()
+        .ToList();
+
+        var scoredRecords = records
+        .Select(record => new
+        {
+            Record = record,
+            Score =
+        keywords.Count(k => (record.Birim ?? "").ToLower().Contains(k)) +
+        keywords.Count(k => (record.Mudurluk ?? "").ToLower().Contains(k)) +
+        keywords.Count(k => (record.Amac ?? "").ToLower().Contains(k)) +
+        keywords.Count(k => (record.Yetki ?? "").ToLower().Contains(k)) +
+        keywords.Count(k => (record.AnaSorumluluk ?? "").ToLower().Contains(k))
+        })
+        .Where(x => x.Score > 0)
+        .OrderByDescending(x => x.Score)
+        .Take(maxCount)
+        .Select(x => x.Record)
+        .ToList();
+
+        if (scoredRecords.Count == 0)
+            return records.Take(maxCount).ToList();
+
+        return scoredRecords;
+    }
+
+    public async Task<object> AskQuestionAsync(ChatbotQuestionDto request)
+    {
+        var folderPath = _configuration["CsvSettings:FolderPath"];
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            throw new Exception("CSV klasör yolu yok");
+
+        if (string.IsNullOrWhiteSpace(request.FileName))
+            throw new Exception("CSV seçilmedi");
+
+        var safeFileName = Path.GetFileName(request.FileName);
+        var filePath = Path.Combine(folderPath, safeFileName);
+
+        if (!File.Exists(filePath))
+            throw new Exception("CSV bulunamadı");
+
+        var records = _csvReaderService.ReadCsv(filePath);
+
+        if (records == null || records.Count == 0)
+            throw new Exception("CSV boş");
+
+        var relevantRecords = GetRelevantRecords(records, request.Question, 50);
+        var summaries = BuildDirectoraterSummaries(relevantRecords);
+        var context = BuildChatbotContext(summaries);
+        var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question);
+        var aiResponse = await _aiService.AnalyzeAsync(prompt);
+
+        return new
+        {
+            fileName = request.FileName,
+            question = request.Question,
+            answer = aiResponse
+        };
+    }
 }

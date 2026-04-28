@@ -10,5 +10,6 @@ namespace TaskAnalysis.Core.Interfaces
     public interface ICsvReaderService
     {
         List<TaskRecord> ReadAllCsv(string folderPath);
+        List<TaskRecord> ReadCsv(string filePath);
     }
 }
