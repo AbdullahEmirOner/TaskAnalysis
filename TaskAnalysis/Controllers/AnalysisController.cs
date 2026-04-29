@@ -153,8 +153,14 @@ public class AnalysisController : ControllerBase
                 Tasks = analyzedTasks
             };
 
+            var cacheEntry = new
+            {
+                data = result,
+                createdAt = DateTime.UtcNow,
+                expireAt = DateTime.UtcNow.AddMinutes(30)
+            };
             // Cache set burada yapılmalı
-            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(30));
+            _cache.Set(cacheKey, cacheEntry, TimeSpan.FromMinutes(15));
 
             return Ok(result);
         }
@@ -168,6 +174,11 @@ public class AnalysisController : ControllerBase
     [HttpGet("ai-unique-tasks")]
     public async Task<IActionResult> GetAiUniqueTasks()
     {
+        var cacheKey = $"ai-unique-tasks"; // Validation Model olarak düzeltielecek kod tekrarı azaltılacak
+
+        if (_cache.TryGetValue(cacheKey, out var cachedResult))
+            return Ok(cachedResult);
+
         try
         {
             var folderPath = _configuration["CsvSettings:FolderPath"];
@@ -189,11 +200,14 @@ public class AnalysisController : ControllerBase
             var prompt = AiPromptBuilder.BuildUniqueTasksPrompt(uniqueTasks);
             var aiResult = await _aiService.AnalyzeAsync(prompt);
 
+            _cache.Set(cacheKey, TimeSpan.FromMinutes(15));
             return Ok(new
             {
                 Prompt = prompt,
                 AiResult = aiResult
             });
+
+
         }
         catch (Exception ex)
         {

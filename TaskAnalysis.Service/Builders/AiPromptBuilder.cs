@@ -12,29 +12,33 @@ public static class AiPromptBuilder
         sb.AppendLine("You are a data normalization expert.");
         sb.AppendLine("Your role is to analyze and group similar business tasks.");
         sb.AppendLine("Tasks may contain typos, Turkish character differences, or different wording.");
-        sb.AppendLine("Merge tasks that have the same meaning into a single normalized task.");
+        sb.AppendLine("Merge ONLY tasks that clearly have the same meaning.");
+        sb.AppendLine("Do NOT merge tasks that are even slightly different.");
+        sb.AppendLine("If unsure, keep tasks separate.");
+
         sb.AppendLine();
         sb.AppendLine("Output requirements:");
         sb.AppendLine("- Return ONLY valid JSON.");
         sb.AppendLine("- Use English JSON keys exactly as specified.");
         sb.AppendLine("- Write all task names in Turkish.");
+
         sb.AppendLine();
         sb.AppendLine("Use this exact JSON format:");
-        sb.AppendLine("""
-       [
-         {
-           "task": "normalized task name",
-           "departments": ["department1", "department2"]
-         }
-       ]
-       """);
+        sb.AppendLine(@"
+[
+{
+""task"": ""normalized task name"",
+""departments"": [""department1"", ""department2""]
+}
+]");
+
         sb.AppendLine();
         sb.AppendLine("Tasks to analyze:");
 
         foreach (var task in tasks)
         {
             sb.AppendLine($"- Task: {task.Task}");
-            sb.AppendLine($"  Departments: {string.Join(", ", task.Departments)}");
+            sb.AppendLine($" Departments: {string.Join(", ", task.Departments)}");
             sb.AppendLine();
         }
 
@@ -48,34 +52,37 @@ public static class AiPromptBuilder
         sb.AppendLine("You are an automation consultant.");
         sb.AppendLine("Analyze the following unique business tasks.");
         sb.AppendLine("For each task, propose a concrete automation project idea.");
-        sb.AppendLine("For each task, determine the best solution type.");
-       // sb.AppendLine("Possible solution types: AI, RPA, Hybrid, Other.");
+        sb.AppendLine("Determine the best solution type (AI, RPA, Hybrid, or Other).");
+
         sb.AppendLine("If none of these fit well, propose a new solution type and explain it.");
-        sb.AppendLine("Estimate the automation rate (%).");
-        sb.AppendLine("Write recommendation text values in Turkish.");
-        sb.AppendLine("If there is a similar real-world project already implemented, include its name and a reference link.");
-        sb.AppendLine("If no similar project exists, explicitly write 'No similar project found' for both name and link.");
+        sb.AppendLine("Estimate the automation rate (%) only if confident.");
+        sb.AppendLine("Write recommendation text in Turkish.");
+        sb.AppendLine("Try to suggest a realistic project based on the task.");
+        sb.AppendLine("Only say 'No similar project found' if absolutely necessary.");
+
+        sb.AppendLine();
         sb.AppendLine("Return ONLY valid JSON.");
-        sb.AppendLine("Use English JSON keys exactly as specified below.");
+        sb.AppendLine("Use English JSON keys exactly as specified.");
+
         sb.AppendLine();
         sb.AppendLine("Use this exact JSON structure:");
-        sb.AppendLine("""
-    [
-      {
-        "task": "string",
-        "departments": ["string"],
-        "bestSolution": "string",
-        "automationRate": 0,
-        "recommendation": "string",
-        "projectIdea": "string",
-        "similarProjectName": "string",
-        "similarProjectLink": "string"
-      }
-    ]
-    """);
-        sb.AppendLine();
+        sb.AppendLine(@"
+[
+{
+""task"": ""string"",
+""departments"": [""string""],
+""bestSolution"": ""string"",
+""automationRate"": 0,
+""recommendation"": ""string"",
+""projectIdea"": ""string"",
+""similarProjectName"": ""string"",
+""similarProjectLink"": ""string""
+}
+]");
 
+        sb.AppendLine();
         sb.AppendLine("Tasks:");
+
         foreach (var task in tasks)
         {
             sb.AppendLine($"Task: {task.Task}");
@@ -86,28 +93,39 @@ public static class AiPromptBuilder
         return sb.ToString();
     }
 
-
     public static string BuildChatbotPrompt(string context, string question)
     {
         var sb = new StringBuilder();
 
         sb.AppendLine("You are a corporate task analysis assistant.");
         sb.AppendLine("Your role is to answer the user's question using ONLY the provided company task data.");
+
+        sb.AppendLine();
         sb.AppendLine("Strict rules:");
-        sb.AppendLine("- Do not use external knowledge.");
-        sb.AppendLine("Provide your answer below. If partial information exists, explain what can be inferred and what is missing.");
+        sb.AppendLine("- Do NOT use external knowledge.");
+        sb.AppendLine("- Use ONLY the given data.");
+        sb.AppendLine("- If exact answer is not directly found:");
+        sb.AppendLine(" • Try to infer from related tasks.");
+        sb.AppendLine(" • Combine multiple records if needed.");
+        sb.AppendLine(" • Explain your reasoning clearly.");
+        sb.AppendLine("- Only say 'Verilen veriler bu soruyu yanıtlamak için yeterli değil' if absolutely NO relevant information exists.");
         sb.AppendLine("- Write the entire answer in Turkish.");
         sb.AppendLine("- Be clear, concise, and professional.");
+
         sb.AppendLine();
-        sb.AppendLine("Company task data:");
+        sb.AppendLine("Company task data (structured):");
+        sb.AppendLine("Each line is a separate task record.");
         sb.AppendLine(context);
+
         sb.AppendLine();
         sb.AppendLine("User question:");
         sb.AppendLine(question);
+
         sb.AppendLine();
         sb.AppendLine("Answer:");
 
         return sb.ToString();
     }
+
 
 }

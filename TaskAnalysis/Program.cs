@@ -12,8 +12,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<ICsvReaderService, CsvTaskReaders>();
-builder.Services.AddScoped<IAnalysisService, AnalysisService>();
-builder.Services.AddHttpClient<IAiService, AiService>();
+builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
+builder.Services.AddScoped<IAnalysisService, AnalysisService>(); 
+builder.Services.AddScoped<IVectorDbService, VectorDbService>();
+builder.Services.AddHttpClient<IAiService, AiService>(); 
 
 //builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddCors(options =>

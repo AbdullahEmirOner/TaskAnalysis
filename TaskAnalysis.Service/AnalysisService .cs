@@ -10,17 +10,22 @@ namespace TaskAnalysis.Service.Services;
 
 public class AnalysisService : IAnalysisService
 {
+    private readonly Dictionary<string, List<(string Text, List<float> Vector)>> _vectorStore = new();
     private readonly ICsvReaderService _csvReaderService;
+    private readonly IEmbeddingService _embeddingService;
     private readonly IAiService _aiService;
     private readonly IMemoryCache _cache;
     private readonly IConfiguration _configuration;
+    private readonly IVectorDbService _vectorDb;
 
-    public AnalysisService(ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
+    public AnalysisService(IVectorDbService vectorDbService, IEmbeddingService embeddingService, ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
     {
         _csvReaderService = csvReaderService;
         _aiService = aiService;
         _configuration = configuration;
         _cache = cache;
+        _embeddingService = embeddingService;
+        _vectorDb = vectorDbService;
     }
 
     public List<DirectorateSummaryDto> BuildDirectoraterSummaries(List<TaskRecord> records)
@@ -110,10 +115,6 @@ public class AnalysisService : IAnalysisService
         };
     }*/
 
-    private static bool IsValidText(string? value)
-    {
-        return !string.IsNullOrWhiteSpace(value);
-    }
 
     public string BuildChatbotContext(List<DirectorateSummaryDto> summaries)
     {
@@ -203,15 +204,17 @@ public class AnalysisService : IAnalysisService
         .ToList();
 
         var scoredRecords = records
-        .Select(record => new
+        .Select(r =>
         {
-            Record = record,
-            Score =
-        keywords.Count(k => (record.Birim ?? "").ToLower().Contains(k)) +
-        keywords.Count(k => (record.Mudurluk ?? "").ToLower().Contains(k)) +
-        keywords.Count(k => (record.Amac ?? "").ToLower().Contains(k)) +
-        keywords.Count(k => (record.Yetki ?? "").ToLower().Contains(k)) +
-        keywords.Count(k => (record.AnaSorumluluk ?? "").ToLower().Contains(k))
+            var text = $"{r.Amac} {r.AnaSorumluluk} {r.Yetki}".ToLower();
+
+            int score = keywords.Count(k => text.Contains(k));
+
+            return new
+            {
+                Record = r,
+                Score = score
+            };
         })
         .Where(x => x.Score > 0)
         .OrderByDescending(x => x.Score)
@@ -227,36 +230,76 @@ public class AnalysisService : IAnalysisService
 
     public async Task<object> AskQuestionAsync(ChatbotQuestionDto request)
     {
-        var folderPath = _configuration["CsvSettings:FolderPath"];
+        var queryEmbedding = await _embeddingService.CreateEmbeddingAsync(request.Question);
 
-        if (string.IsNullOrWhiteSpace(folderPath))
-            throw new Exception("CSV klasör yolu yok");
+        var relevantChunks = await _vectorDb.SearchAsync(queryEmbedding);
 
-        if (string.IsNullOrWhiteSpace(request.FileName))
-            throw new Exception("CSV seçilmedi");
+        var context = string.Join("\n\n", relevantChunks);
 
-        var safeFileName = Path.GetFileName(request.FileName);
-        var filePath = Path.Combine(folderPath, safeFileName);
-
-        if (!File.Exists(filePath))
-            throw new Exception("CSV bulunamadı");
-
-        var records = _csvReaderService.ReadCsv(filePath);
-
-        if (records == null || records.Count == 0)
-            throw new Exception("CSV boş");
-
-        var relevantRecords = GetRelevantRecords(records, request.Question, 50);
-        var summaries = BuildDirectoraterSummaries(relevantRecords);
-        var context = BuildChatbotContext(summaries);
         var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question);
+
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
         return new
         {
-            fileName = request.FileName,
             question = request.Question,
             answer = aiResponse
         };
+    }
+
+    private static bool IsValidText(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value);
+    }
+
+    public List<string> ChunkRecords(List<TaskRecord> records)
+    {
+        return records.Select(r =>
+        $"Direktörlük: {r.Mudurluk} | Birim: {r.Birim} | Amaç: {r.Amac} | Ana Sorumluluk: {r.AnaSorumluluk}"
+        ).ToList();
+    }
+    //   SicilNo;Birim;Mudurluk;Amac;Yetki;AnaSorumluluk
+
+    public async Task IndexCsvAsync(string fileName, List<TaskRecord> records)
+    {
+        var chunks = records.Select(r =>
+            $"Direktörlük: {r.Mudurluk} | Birim: {r.Birim} | Amaç: {r.Amac} | Sorumluluk: {r.AnaSorumluluk}"
+        ).ToList();
+
+        foreach (var chunk in chunks)
+        {
+            var embedding = await _embeddingService.CreateEmbeddingAsync(chunk);
+            await _vectorDb.InsertAsync(chunk, embedding);
+        }
+    }
+
+    private double CosineSimilarity(float[] v1, float[] v2)
+    {
+        var dot = v1.Zip(v2, (a, b) => a * b).Sum();
+        var mag1 = Math.Sqrt(v1.Sum(x => x * x));
+        var mag2 = Math.Sqrt(v2.Sum(x => x * x));
+
+        return dot / (mag1 * mag2 + 1e-8);
+    }
+
+    public async Task<List<string>> RetrieveRelevantChunks(string fileName, string question)
+    {
+        if (!_vectorStore.ContainsKey(fileName))
+            return new List<string>();
+
+        var questionEmbedding = await _embeddingService.CreateEmbeddingAsync(question);
+
+        var scored = _vectorStore[fileName]
+            .Select(v => new
+            {
+                Text = v.Text,
+                Score = CosineSimilarity(v.Vector, questionEmbedding)
+            })
+            .OrderByDescending(x => x.Score)
+            .Take(5)
+            .Select(x => x.Text)
+            .ToList();
+
+        return scored;
     }
 }
