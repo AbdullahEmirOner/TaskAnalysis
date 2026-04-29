@@ -45,6 +45,21 @@ public class AnalysisController : ControllerBase
         return Ok(records);
     }
 
+    [HttpGet("raw-txt")]
+    public IActionResult GetRawTxt()
+    {
+        var folderPath = _configuration["CsvSettings:FolderPath"];
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            return BadRequest("Text klasör yolu tanımlı değil.");
+
+        // 📌 Artık text okuyan metodu çağırıyoruz
+        var records = _csvReaderService.ReadAllTxt(folderPath);
+
+        return Ok(records);
+    }
+
+
     [HttpGet("summary")]
     public IActionResult GetSummary()
     {

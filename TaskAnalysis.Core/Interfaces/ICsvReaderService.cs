@@ -11,5 +11,6 @@ namespace TaskAnalysis.Core.Interfaces
     {
         List<TaskRecord> ReadAllCsv(string folderPath);
         List<TaskRecord> ReadCsv(string filePath);
+        List<string> ReadAllTxt(string folderPath);
     }
 }

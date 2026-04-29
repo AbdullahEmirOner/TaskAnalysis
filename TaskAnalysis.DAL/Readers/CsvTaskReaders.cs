@@ -21,7 +21,7 @@ namespace TaskAnalysis.DAL.Readers
 
                📌 Kısacası: string.IsNullOrWhiteSpace → “Bu string gerçekten dolu mu, yoksa boş/boşluk mu?” sorusuna cevap verir.
                  */
-                throw new ArgumentException("Klasör yolu boş olamaz", nameof(folderPath));
+                throw new ArgumentException("Klasör yolu boş olamaz", nameof(folderPath)); // ArgumentException, metoda verilen parametrelerin geçersiz olduğu durumlarda kullanılır. Null değer için ArgumentNullException, aralık dışı değerler için ArgumentOutOfRangeException tercih edilir.
             /* nameof
              nameof(folderPath) → "folderPath" döner.
              Yani kodda kullandığın değişkenin ismi string olarak elde edilir.
@@ -125,25 +125,30 @@ namespace TaskAnalysis.DAL.Readers
             return allRecord;
         }
 
-        private static bool IsMeaningful(TaskRecord record)
+        public List<string> ReadAllTxt(string folderPath)
         {
-            if (string.IsNullOrWhiteSpace(record.AnaSorumluluk))
+            if (string.IsNullOrWhiteSpace(folderPath))
+                throw new ArgumentException("Klasör yolu boş olamaz", nameof(folderPath));
+
+            if (!Directory.Exists(folderPath))
+                throw new DirectoryNotFoundException("Klasör bulunamadı: " + folderPath);
+
+            var allLines = new List<string>();
+            var files = Directory.GetFiles(folderPath, "*.txt");
+
+            foreach (var file in files)
             {
-                return false;
+                using var reader = new StreamReader(file);
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    // Satır boş değilse listeye ekle
+                    if (!string.IsNullOrWhiteSpace(line))
+                        allLines.Add(line);
+                }
             }
-            return !string.IsNullOrWhiteSpace(record.Mudurluk)
-                || !string.IsNullOrWhiteSpace(record.Yetki)
-                || !string.IsNullOrWhiteSpace(record.Amac);
-        }
 
-        private static string GetDirektorlukFromFileName(string fileName) // --> Dosya adını okunabilir bir direktörlük adı haline getiriyor.
-        {
-            var name = Path.GetFileNameWithoutExtension(fileName);
-
-            return name
-                .Replace("_", " ")
-                .Replace("-", " ")
-                .Trim();
+            return allLines;
         }
 
         public List<TaskRecord> ReadCsv(string filePath)
@@ -192,6 +197,28 @@ namespace TaskAnalysis.DAL.Readers
 
             return allRecord;
         }
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        private static bool IsMeaningful(TaskRecord record)
+        {
+            if (string.IsNullOrWhiteSpace(record.AnaSorumluluk))
+            {
+                return false;
+            }
+            return !string.IsNullOrWhiteSpace(record.Mudurluk)
+                || !string.IsNullOrWhiteSpace(record.Yetki)
+                || !string.IsNullOrWhiteSpace(record.Amac);
+        }
+
+        private static string GetDirektorlukFromFileName(string fileName) // --> Dosya adını okunabilir bir direktörlük adı haline getiriyor.
+        {
+            var name = Path.GetFileNameWithoutExtension(fileName);
+
+            return name
+                .Replace("_", " ")
+                .Replace("-", " ")
+                .Trim();
+        }
+
 
     }
 }

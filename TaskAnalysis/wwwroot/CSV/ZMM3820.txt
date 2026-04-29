@@ -1,0 +1,560 @@
+*&---------------------------------------------------------------------*
+*& Report  ZMM_TPD_ESKALASYON_PERFORMANS
+*&
+*&---------------------------------------------------------------------*
+*&  Yazan : SATCEKEN, HKAKIL
+*&  Tarih : 17.01.2025
+*&  TCode : ZMM3820
+*&  Amaç  : Tedarikçi performans değerlendirme projesi kapsamında
+*&          satıcıların maliyet hedefine uyum performansını ölçmek için
+*&          eskalasyon performanslarının csv ile ITG'ye gönderilmesi
+*&
+*&  İlgili: Burhan Ülker
+*&  CNo   : 65954
+*&---------------------------------------------------------------------*
+
+report  zmm_tpd_eskalasyon_performans.
+
+"$. Region TOP
+
+tables: zmm_esk_i_satici, lfm1.
+type-pools: abap.
+
+*&**********************************************************************
+*&                      S E L E C T I O N  S C R E E N
+*&**********************************************************************
+selection-screen begin of block b1 with frame title text-001.
+
+  select-options: s_lifnr for  zmm_esk_i_satici-lifnr.
+  parameters: p_donem type s002-spmon obligatory,
+              p_month type t5a4a-dlymo obligatory default 12.
+  select-options: s_ekorg for  lfm1-ekorg  obligatory default '1100'
+                                           no intervals.
+  parameters: p_vsrm as checkbox default 'X',
+              p_path type pfeflnamel.
+
+selection-screen end of block b1.
+
+*&**********************************************************************
+*&                      V A R I A B L E S
+*&**********************************************************************
+*<< Grid
+data: ok_code like sy-ucomm,
+      save_ok like sy-ucomm.
+data: go_container_docking type ref to cl_gui_docking_container,
+      go_grid              type ref to cl_gui_alv_grid.
+data: gs_layout type lvc_s_layo,
+      gs_stable type lvc_s_stbl.
+data: it_selected_rows type lvc_t_row,
+      wa_selected_row  type lvc_s_row.
+data: gt_fcode type table of sy-ucomm,
+      wa_fcode type sy-ucomm.
+data: it_fieldcat type lvc_t_fcat,
+      wa_fieldcat type lvc_s_fcat.
+
+*<< display_data değişkenleri
+data: it_data type table of zmm_tpd_esk_per_str,
+      wa_data type zmm_tpd_esk_per_str.
+data: gv_structure_name type typename value 'ZMM_TPD_ESK_PER_STR'.
+
+*<< Dosya değişkenleri
+data: file_name type string,
+      full_path type string.
+data: it_line type table of string,
+      wa_line type string.
+data: str_puan type string.
+
+*<<
+data: it_esk_per type table of zmm_tpd_esk_per,
+      wa_esk_per type zmm_tpd_esk_per.
+data: it_esk_per_log type table of zmm_tpd_eskper_l,
+      wa_esk_per_log type zmm_tpd_eskper_l.
+
+"$. Endregion TOP
+
+*&**********************************************************************
+*&                      E V E N T S
+*&**********************************************************************
+initialization.
+  perform init.
+
+at selection-screen on value-request for p_path .
+  perform select_path.
+
+start-of-selection.
+  perform get_data.
+
+end-of-selection.
+  perform send_data.
+  perform save_data.
+  perform display_data.
+
+*&**********************************************************************
+*&                      M O D U L E S
+*&**********************************************************************
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_9000  OUTPUT
+*&---------------------------------------------------------------------*
+module status_9000 output.
+  set pf-status 'STATUS_9000'.
+  set titlebar 'TITLE_9000'.
+
+  call method go_grid->set_frontend_layout
+    exporting
+      is_layout = gs_layout.
+
+  call method go_grid->refresh_table_display
+    exceptions
+      others = 2.
+endmodule.                 " STATUS_9000  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_9000  INPUT
+*&---------------------------------------------------------------------*
+module user_command_9000 input.
+  save_ok = ok_code.
+  clear: ok_code..
+
+  case save_ok.
+    when '&F03' or '&F12' or '&F15' or '&BACK'.
+      leave to screen 0.
+  endcase.
+endmodule.                 " USER_COMMAND_9000  INPUT
+
+*&**********************************************************************
+*&                      S U B R O U T I N E S
+*&**********************************************************************
+*&---------------------------------------------------------------------*
+*&      Form  INIT
+*&---------------------------------------------------------------------*
+form init .
+*<< Dönem ataması
+  data: calc_date type sy-datum.
+  call function 'RP_CALC_DATE_IN_INTERVAL'
+    exporting
+      date      = sy-datum
+      days      = 0
+      months    = 1
+      signum    = '-'
+      years     = 0
+    importing
+      calc_date = calc_date.
+
+  p_donem = calc_date(6).
+
+*<< Dizin ataması
+  "  p_path = '\usr\sap\trans\ftp\giden\tpd_esk\'.
+
+*<< Dosya yükleme programları kontrolü - beguler
+*  concatenate '\\' sy-host '\ztrans\ftp\giden\tpd_esk\'
+*  into p_path.
+*>>Dosya path rev. cNo : #75474 -hkakil
+    data : lv_dir type user_dir-dirname.
+    clear : lv_dir.
+    select single dirname from user_dir
+      into lv_dir where aliass eq 'Z_TRANS'.
+
+    concatenate lv_dir '\ftp\giden\tpd_esk\'
+    into p_path.
+*<< -hkakil
+
+endform.                    " INIT
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_PATH
+*&---------------------------------------------------------------------*
+form select_path .
+  data: selected_folder type string.
+
+  call method cl_gui_frontend_services=>directory_browse
+    changing
+      selected_folder      = selected_folder
+    exceptions
+      cntl_error           = 1
+      error_no_gui         = 2
+      not_supported_by_gui = 3
+      others               = 4.
+
+  p_path = selected_folder.
+endform.                    " SELECT_PATH
+*&---------------------------------------------------------------------*
+*&      Form  GET_DATA
+*&---------------------------------------------------------------------*
+form get_data .
+  data: e_error   type  char1,
+        e_message type  char200.
+  data: it_sonuc type table of zmm_esk_s_web_ozet,
+        wa_sonuc type zmm_esk_s_web_ozet.
+  data: it_satici_sonuc type table of zmm_esk_s_web_satici,
+        wa_satici_sonuc type zmm_esk_s_web_satici.
+  data: it_esk_puan type table of zmm_tpd_esk_puan,
+        wa_esk_puan type zmm_tpd_esk_puan.
+  data: it_lfm1 type table of lfm1.
+  data: donem_bas type s002-spmon,
+        donem_bit type s002-spmon.
+  data: calc_date type sy-datum,
+        lv_date   type sy-datum.
+
+*<< Dönem başlangıç ve bitişini bulma
+  concatenate p_donem '01' into lv_date.
+  call function 'RP_CALC_DATE_IN_INTERVAL'
+    exporting
+      date      = lv_date
+      days      = 0
+      months    = p_month
+      signum    = '-'
+      years     = 0
+    importing
+      calc_date = calc_date.
+
+  donem_bas = calc_date(6).
+  donem_bit = p_donem.
+
+*<<
+  select * from zmm_tpd_esk_puan
+    into table it_esk_puan.
+  sort it_esk_puan by yil ascending performans descending.
+
+*<< Puan bilgileri yoksa hata ver, çık
+  if it_esk_puan[] is initial.
+    message text-e01 type 'I' display like 'E'.
+    leave list-processing.
+  endif.
+
+  call function 'ZMM_ESK_WEB_OZET_RAPOR'
+    exporting
+      i_yil                  = sy-datum(4)
+      i_donem_1              = sy-datum+4(2)
+      i_donem_2              = sy-datum+4(2)
+      i_mense                = '0'
+      i_oy_son_donem         = 'X'
+      i_oy_son_mg            = ''
+      i_birikimli            = 'X'
+      i_birikimsiz           = ''
+      i_birikimsiz_kumulatif = ''
+      i_askeri_ticari        = ''
+      i_esk_donem_1          = donem_bas
+      i_esk_donem_2          = donem_bit
+    importing
+      e_error                = e_error
+      e_message              = e_message
+    tables
+      et_sonuc               = it_sonuc
+      et_satici_sonuc        = it_satici_sonuc.
+
+*<< Ekrandan girilen LIFNR filtresine göre satıcıyı filtre
+  delete it_satici_sonuc where lifnr not in s_lifnr.
+
+*<< Eskalasyon bilgileri yoksa hata ver, çık
+  if it_satici_sonuc[] is initial.
+    message text-e02 type 'I' display like 'E'.
+    leave list-processing.
+  endif.
+
+*<< Satıcıların sa.org. bilgilerini al
+  select lifnr ekorg from lfm1
+    into corresponding fields of table it_lfm1
+    for all entries in it_satici_sonuc
+    where lifnr eq it_satici_sonuc-lifnr
+      and ekorg in s_ekorg
+      and sperm eq space
+      and loevm eq space.
+
+*<< ALV'yi doldur
+  loop at it_satici_sonuc into wa_satici_sonuc.
+    clear: wa_data, wa_esk_puan.
+
+*<< Ekrandan girilen EKORG filtresine göre satıcıyı filtre
+    read table it_lfm1 with key lifnr = wa_satici_sonuc-lifnr
+                       transporting no fields.
+    check sy-subrc eq 0.
+
+*<< Performans puanı
+    loop at it_esk_puan into wa_esk_puan
+                       where yil eq wa_satici_sonuc-donem(4).
+      if wa_satici_sonuc-esk_performans ge wa_esk_puan-performans.
+        exit.
+      endif.
+    endloop.
+
+*<< RFC'den gelen veriler
+    wa_data-lifnr      = wa_satici_sonuc-lifnr.
+    wa_data-name1      = wa_satici_sonuc-name1.
+    wa_data-donem_yil  = wa_satici_sonuc-donem(4).
+    wa_data-donem_ay   = wa_satici_sonuc-donem+4(2).
+    wa_data-performans = wa_satici_sonuc-esk_performans.
+    wa_data-puan       = wa_esk_puan-puan.
+    append wa_data to it_data.
+  endloop.
+endform.                    "get_data
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_DATA
+*&---------------------------------------------------------------------*
+form display_data .
+  data: ls_variant type disvariant.
+
+*<< Container
+  if go_container_docking is initial.
+    create object go_container_docking
+      exporting
+        parent = cl_gui_container=>screen0
+        ratio  = 95
+      exceptions
+        others = 6.
+
+*<< Grid
+    create object go_grid
+      exporting
+        i_parent = go_container_docking
+      exceptions
+        others   = 5.
+  endif.
+
+*<< Layout, Variant
+  gs_layout-zebra      = 'X'.
+  gs_layout-cwidth_opt = 'X'.
+  gs_layout-sel_mode   = 'B'.
+
+  ls_variant-handle    = 'A100'.
+  ls_variant-report    = sy-repid.
+  ls_variant-username  = sy-uname.
+
+*<< Grid
+  perform build_fieldcat.
+  check it_fieldcat[] is not initial.
+
+  call method go_grid->set_table_for_first_display
+    exporting
+      is_layout       = gs_layout
+      is_variant      = ls_variant
+      i_save          = 'A'
+    changing
+      it_fieldcatalog = it_fieldcat
+      it_outtab       = it_data[]
+    exceptions
+      others          = 4.
+
+*<< Container Link
+  call method go_container_docking->link
+    exporting
+      repid  = syst-repid
+      dynnr  = '9000'
+    exceptions
+      others = 4.
+
+  call screen 9000.
+endform.                    " DISPLAY_DATA
+*&---------------------------------------------------------------------*
+*&      Form  BUILD_FIELDCAT
+*&---------------------------------------------------------------------*
+form build_fieldcat .
+  field-symbols: <fs_fcat> type lvc_s_fcat.
+
+  clear: it_fieldcat, it_fieldcat[] .
+
+  call function 'LVC_FIELDCATALOG_MERGE'
+    exporting
+      i_structure_name       = gv_structure_name
+    changing
+      ct_fieldcat            = it_fieldcat
+    exceptions
+      inconsistent_interface = 1
+      program_error          = 2
+      others                 = 3.
+  if sy-subrc <> 0.
+    message id sy-msgid type sy-msgty number sy-msgno
+            with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  endif.
+
+  loop at it_fieldcat assigning <fs_fcat>.
+    check <fs_fcat> is assigned.
+
+    case <fs_fcat>-fieldname.
+      when 'NAME1'.
+        <fs_fcat>-scrtext_s = <fs_fcat>-scrtext_m = <fs_fcat>-scrtext_l
+                            = <fs_fcat>-reptext   = text-f01.
+      when 'KAYIT_NO'.
+        <fs_fcat>-scrtext_s = <fs_fcat>-scrtext_m = <fs_fcat>-scrtext_l
+                            = <fs_fcat>-reptext   = text-f02.
+        <fs_fcat>-no_out    = abap_true.
+      when 'FILENAME'.
+        <fs_fcat>-scrtext_s = <fs_fcat>-scrtext_m = <fs_fcat>-scrtext_l
+                            = <fs_fcat>-reptext   = text-f03.
+        <fs_fcat>-no_out    = abap_true.
+      when 'DONEM_YIL'.
+        <fs_fcat>-scrtext_s = <fs_fcat>-scrtext_m = <fs_fcat>-scrtext_l
+                            = <fs_fcat>-reptext   = text-f04.
+      when 'DONEM_AY'.
+        <fs_fcat>-scrtext_s = <fs_fcat>-scrtext_m = <fs_fcat>-scrtext_l
+                            = <fs_fcat>-reptext   = text-f05.
+      when 'PUAN'.
+        <fs_fcat>-scrtext_s = <fs_fcat>-scrtext_m = <fs_fcat>-scrtext_l
+                            = <fs_fcat>-reptext   = text-f06.
+      when 'PERFORMANS'.
+        <fs_fcat>-scrtext_s = <fs_fcat>-scrtext_m = <fs_fcat>-scrtext_l
+                            = <fs_fcat>-reptext   = text-f07.
+      when 'ERNAM' or 'ERDAT' or 'ERZET'.
+        <fs_fcat>-no_out    = abap_true.
+    endcase.
+  endloop.
+endform.                    "BUILD_FIELDCAT
+*&---------------------------------------------------------------------*
+*&      Form  SEND_DATA
+*&---------------------------------------------------------------------*
+form send_data .
+  clear: file_name, full_path, wa_line, it_line[].
+  check p_vsrm is not initial.
+
+*<< Dosya adı
+  concatenate 'KPI9_'
+              sy-datum(4)
+              sy-datum+4(2)
+              sy-datum+6(2)
+              sy-uzeit(4)
+             '.csv'
+        into file_name.
+
+*<< Dosya yolu
+  concatenate p_path file_name into full_path separated by '\'.
+
+  wa_line = 'KPIData'.
+  append wa_line to it_line.
+
+*<< CSV dosyasının içeriği
+  loop at it_data into wa_data.
+    str_puan = wa_data-puan.
+    shift wa_data-lifnr left deleting leading '0'.
+
+    concatenate wa_data-lifnr
+                wa_data-donem_yil
+                wa_data-donem_ay
+                'ES'
+                str_puan
+           into wa_line separated by ';'.
+
+    append wa_line to it_line.
+  endloop.
+
+  wa_line = 'endKPIData'.
+  append wa_line to it_line.
+
+  if sy-batch is initial.
+    call method cl_gui_frontend_services=>gui_download
+      exporting
+        filename                = full_path
+        filetype                = 'ASC'
+        write_field_separator   = ';'
+        replacement             = ';'
+      changing
+        data_tab                = it_line[]
+      exceptions
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21
+        not_supported_by_gui    = 22
+        error_no_gui            = 23
+        others                  = 24.
+  else.
+    open dataset full_path for output
+                           in text mode
+                           encoding non-unicode
+                           with smart linefeed
+                           ignoring conversion errors.
+    if sy-subrc <> 0.
+      message text-e03 type 'E'.
+    endif.
+
+    loop at it_line into wa_line.
+      transfer wa_line to full_path.
+    endloop.
+
+    close dataset full_path .
+  endif.
+
+endform.                    " SEND_DATA
+*&---------------------------------------------------------------------*
+*&      Form  SAVE_DATA
+*&---------------------------------------------------------------------*
+form save_data .
+  check p_vsrm is not initial.
+
+  get time.
+  clear: wa_esk_per_log.
+  refresh: it_esk_per, it_esk_per_log.
+
+*<< Eskalasyon Performansı Log tablosunu doldur
+  perform number_get_next changing wa_esk_per_log-kayit_no.
+  wa_esk_per_log-filename = file_name.
+  wa_esk_per_log-ernam = sy-uname.
+  wa_esk_per_log-erdat = sy-datum.
+  wa_esk_per_log-erzet = sy-uzeit.
+  append wa_esk_per_log to it_esk_per_log.
+
+*<< Eskalasyon Performansı tablosunu doldur
+  loop at it_data into wa_data.
+    move-corresponding wa_data to wa_esk_per.
+    wa_esk_per-kayit_no = wa_esk_per_log-kayit_no.
+
+    append wa_esk_per to it_esk_per.
+  endloop.
+
+*<<
+  if it_esk_per[] is not initial.
+    modify zmm_tpd_eskper_l from table it_esk_per_log.
+    modify zmm_tpd_esk_per from table it_esk_per.
+  endif.
+endform.                    " SAVE_DATA
+*&---------------------------------------------------------------------*
+*&      Form  NUMBER_GET_NEXT
+*&---------------------------------------------------------------------*
+form number_get_next changing p_number.
+  data: nr_range_nr like inri-nrrangenr,
+        object      like inri-object.
+
+  clear: p_number.
+  nr_range_nr = '1'.
+  object      = 'Z_TPD_ESK'.
+
+  select count(*) from nriv
+    where object    = object
+      and nrrangenr = nr_range_nr.
+  if sy-subrc ne 0.
+    message 'Kayıt numara aralığı oluşturulmamış! (SNUM)' type 'E'.
+  endif.
+
+  call function 'NUMBER_GET_NEXT'
+    exporting
+      nr_range_nr             = nr_range_nr
+      object                  = object
+    importing
+      number                  = p_number
+    exceptions
+      interval_not_found      = 1
+      number_range_not_intern = 2
+      object_not_found        = 3
+      quantity_is_0           = 4
+      quantity_is_not_1       = 5
+      interval_overflow       = 6
+      buffer_overflow         = 7
+      others                  = 8.
+
+  if p_number is initial .
+    message 'İşlem numarası alınamadı!' type 'E'.
+  endif.
+endform.                    " NUMBER_GET_NEXT

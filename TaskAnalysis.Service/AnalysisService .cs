@@ -225,31 +225,76 @@ public class AnalysisService : IAnalysisService
         return scoredRecords;
     }
 
+    /*  public async Task<object> AskQuestionAsync(ChatbotQuestionDto request)
+      {
+          var folderPath = _configuration["CsvSettings:FolderPath"];
+
+          if (string.IsNullOrWhiteSpace(folderPath))
+              throw new Exception("CSV klasör yolu yok");
+
+          if (string.IsNullOrWhiteSpace(request.FileName))
+              throw new Exception("CSV seçilmedi");
+
+          var safeFileName = Path.GetFileName(request.FileName);
+          var filePath = Path.Combine(folderPath, safeFileName);
+
+          if (!File.Exists(filePath))
+              throw new Exception("CSV bulunamadı");
+
+          var records = _csvReaderService.ReadCsv(filePath);
+
+          if (records == null || records.Count == 0)
+              throw new Exception("CSV boş");
+
+          var relevantRecords = GetRelevantRecords(records, request.Question, 50);
+          var summaries = BuildDirectoraterSummaries(relevantRecords);
+          var context = BuildChatbotContext(summaries);
+          var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question);
+          var aiResponse = await _aiService.AnalyzeAsync(prompt);
+
+          return new
+          {
+              fileName = request.FileName,
+              question = request.Question,
+              answer = aiResponse
+          };*/
+
     public async Task<object> AskQuestionAsync(ChatbotQuestionDto request)
     {
         var folderPath = _configuration["CsvSettings:FolderPath"];
 
         if (string.IsNullOrWhiteSpace(folderPath))
-            throw new Exception("CSV klasör yolu yok");
+            throw new Exception("Text klasör yolu yok");
 
         if (string.IsNullOrWhiteSpace(request.FileName))
-            throw new Exception("CSV seçilmedi");
+            throw new Exception("Text dosyası seçilmedi");
 
         var safeFileName = Path.GetFileName(request.FileName);
         var filePath = Path.Combine(folderPath, safeFileName);
 
         if (!File.Exists(filePath))
-            throw new Exception("CSV bulunamadı");
+            throw new Exception("Text dosyası bulunamadı");
 
-        var records = _csvReaderService.ReadCsv(filePath);
+        // 📌 Dosyayı satır satır oku
+        var lines = new List<string>();
+        using (var reader = new StreamReader(filePath))
+        {
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                    lines.Add(line);
+            }
+        }
 
-        if (records == null || records.Count == 0)
-            throw new Exception("CSV boş");
+        if (lines.Count == 0)
+            throw new Exception("Text dosyası boş");
 
-        var relevantRecords = GetRelevantRecords(records, request.Question, 50);
-        var summaries = BuildDirectoraterSummaries(relevantRecords);
-        var context = BuildChatbotContext(summaries);
-        var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question);
+        // 📌 Prompt'u doğrudan text satırlarıyla kur
+        var context = string.Join(Environment.NewLine, lines);
+     //   var prompt = $"You are an SAP expert who helps non-technical users understand SAP screens and fix issues.\r\n\r\nYou are given ABAP source code (from T-Codes) inside text files. Use this code as your main reference to understand what the screen or process does.\r\n\r\nAnalyze the provided content and:\r\n\r\nExplain the purpose of the screen or transaction in simple terms\r\nDescribe what the user is expected to do\r\nIf there is an error or dump, explain the likely reason based on the ABAP logic\r\nProvide clear, step-by-step guidance to solve the issue\r\nMention important warnings or common user mistakes if relevant\r\n\r\nKeep your answers short, clear, and practical. Do not include unnecessary technical details, but use the ABAP logic to give accurate explanations.\r\n\r\nRespond in Turkish, but think and analyze in English.\r\n\r\nAct like an experienced SAP support specialist guiding a real end user. :\n\n{context}\n\nSoru: {request.Question}";
+        var prompt = $"Ne sorarsam cevapla";
+
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
         return new
@@ -259,4 +304,8 @@ public class AnalysisService : IAnalysisService
             answer = aiResponse
         };
     }
+
 }
+
+
+

@@ -109,5 +109,4 @@ public static class AiPromptBuilder
 
         return sb.ToString();
     }
-
 }

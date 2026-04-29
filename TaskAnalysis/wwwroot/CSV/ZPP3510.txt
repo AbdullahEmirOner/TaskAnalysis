@@ -1,0 +1,428 @@
+*&---------------------------------------------------------------------*
+*& Report  ZPP_BIRINCIL_IHT_RAPORU
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+*&  Yazan : Beyzanur GÜLER
+*&  Tarih : 21.02.2025
+*&  TCode : ZPP3510
+*&  Amaç  : MD62 ekranında girilen direkt parça kodundan tetiklenen
+*&          VSF’lerin toplu bir listesinin görüntülenmesi için
+*&          oluşturulan program.(birincil ihtiyaç raporu)
+*&  İlgili: Onur Demir
+*&  CNo   : #67458
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+
+REPORT  ZPP_BIRINCIL_IHT_RAPORU.
+
+TABLES: pbed, pbim, makt, mara.
+
+
+TYPES: BEGIN OF gty_total,
+
+  MALZEME       TYPE PBIM-MATNR,
+  URTM_YERI     TYPE PBIM-WERKS,
+  IHT_TURU      TYPE PBIM-BEDAE,
+  IHT_GSTRGESI  TYPE PBIM-BDZEI,
+  TKTM_GSTRGESI TYPE PBIM-ZUVKZ,
+  ETKIN         TYPE PBIM-VERVS,
+  PLNL_TKTM     TYPE PBIM-VERKZ,
+  PLANLAMA      TYPE PBIM-PLNKZ,
+  PLNLM_SNRYS   TYPE PBIM-PLSCN,
+  SPRS_KALEMI   TYPE PBIM-KDPOS,
+  MSTRI_SPRS    TYPE PBIM-KDAUF,
+  SILME_GSTRG   TYPE PBED-LOEVR,
+  TARIH         TYPE PBED-PDATU,
+  PLNL_MIKTAR   TYPE PBED-PLNMG,
+  CEKME_MKTR    TYPE PBED-ENTMG,
+  TRH_TIPI      TYPE PBED-ENTLI,
+  DNM_GSTRGESI  TYPE PBED-ENTLU,
+  DONEM         TYPE PBED-PERXX,
+
+END OF gty_total.
+
+TYPES: BEGIN OF gty_backup,
+
+  MALZEME       TYPE PBIM-MATNR,
+  MLZM_TNM      TYPE MAKT-MAKTX,
+  IKML_KYNG     TYPE MARA-LABOR,
+  URTM_YERI     TYPE PBIM-WERKS,
+  IHT_TURU      TYPE PBIM-BEDAE,
+  IHT_GSTRGESI  TYPE PBIM-BDZEI,
+  TKTM_GSTRGESI TYPE PBIM-ZUVKZ,
+  ETKIN         TYPE PBIM-VERVS,
+  PLNL_TKTM     TYPE PBIM-VERKZ,
+  PLANLAMA      TYPE PBIM-PLNKZ,
+  PLNLM_SNRYS   TYPE PBIM-PLSCN,
+  SPRS_KALEMI   TYPE PBIM-KDPOS,
+  MSTRI_SPRS    TYPE PBIM-KDAUF,
+  SILME_GSTRG   TYPE PBED-LOEVR,
+  TARIH         TYPE PBED-PDATU,
+  PLNL_MIKTAR   TYPE PBED-PLNMG,
+  CEKME_MKTR    TYPE PBED-ENTMG,
+  TRH_TIPI      TYPE PBED-ENTLI,
+  DNM_GSTRGESI  TYPE PBED-ENTLU,
+  DONEM         TYPE PBED-PERXX,
+
+END OF gty_backup.
+
+
+DATA: gt_total            TYPE TABLE OF gty_total,
+      gs_total            TYPE gty_total,
+      gt_iht_list         TYPE TABLE OF gty_backup,
+      gs_iht_list         TYPE gty_backup.
+
+DATA: go_grid             TYPE REF TO cl_gui_alv_grid,
+      go_container        TYPE REF TO cl_gui_custom_container,
+      gt_fcat             TYPE lvc_t_fcat,
+      gs_fcat             TYPE lvc_s_fcat,
+      gs_layout           TYPE lvc_s_layo.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK B1 WITH FRAME TITLE TEXT-001.
+
+  SELECT-OPTIONS :S_MLZ   FOR PBIM-MATNR.
+  PARAMETERS:     P_URTM  TYPE PBIM-WERKS DEFAULT 1000 OBLIGATORY.
+  SELECT-OPTIONS: S_IHT   FOR PBIM-BEDAE DEFAULT 'VSF' OBLIGATORY,
+  S_DATUM FOR PBED-PDATU.
+
+  PARAMETERS :   CB_MKTR AS CHECKBOX DEFAULT 'X'.
+SELECTION-SCREEN END OF BLOCK B1.
+
+START-OF-SELECTION.
+
+PERFORM GET_DATA.
+
+IF GT_TOTAL[] IS NOT INITIAL.
+  PERFORM get_selected_data.
+  PERFORM set_fcat_iht_raporu.
+  PERFORM set_layout_iht_raporu.
+  PERFORM display_alv_iht_raporu.
+
+  CALL SCREEN 0100.
+
+ELSE.
+  MESSAGE 'KAYIT BULUNAMADI' TYPE 'S' DISPLAY LIKE 'E'.
+ENDIF.
+
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE STATUS_0100 OUTPUT.
+  SET PF-STATUS '0100'.
+  SET TITLEBAR '0100'.
+
+ENDMODULE.                 " STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+  CASE sy-ucomm.
+  WHEN '&BCK'.
+    LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+FORM GET_DATA.
+
+  IF CB_MKTR EQ 'X'.
+
+    SELECT pbim~matnr
+    pbim~werks
+    pbim~bedae
+    pbim~bdzei
+    pbim~zuvkz
+    pbim~vervs
+    pbim~verkz
+    pbim~plnkz
+    pbim~plscn
+    pbim~kdpos
+    pbim~kdauf
+    pbed~loevr
+    pbed~pdatu
+    pbed~plnmg
+    pbed~entmg
+    pbed~entli
+    pbed~entlu
+    pbed~perxx
+    INTO TABLE gt_total FROM pbim
+    INNER JOIN pbed ON pbim~BDZEI = pbed~BDZEI
+    WHERE pbim~matnr IN S_MLZ
+    AND pbim~werks = P_URTM
+    AND pbim~bedae IN S_IHT
+    AND pbed~pdatu IN S_DATUM
+    AND pbed~plnmg > 0.
+
+    ELSE.
+
+    SELECT pbim~matnr
+    pbim~werks
+    pbim~bedae
+    pbim~bdzei
+    pbim~zuvkz
+    pbim~vervs
+    pbim~verkz
+    pbim~plnkz
+    pbim~plscn
+    pbim~kdpos
+    pbim~kdauf
+    pbed~loevr
+    pbed~pdatu
+    pbed~plnmg
+    pbed~entmg
+    pbed~entli
+    pbed~entlu
+    pbed~perxx
+    INTO TABLE gt_total FROM pbim
+    INNER JOIN pbed ON pbim~BDZEI = pbed~BDZEI
+    WHERE pbim~matnr IN S_MLZ
+    AND pbim~werks = P_URTM
+    AND pbim~bedae IN S_IHT
+    AND pbed~pdatu IN S_DATUM.
+
+  ENDIF.
+
+
+
+ENDFORM.
+
+
+FORM set_fcat_iht_raporu.
+
+  CLEAR gt_fcat.
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MALZEME'.
+  gs_fcat-SCRTEXT_L = 'Malzeme'.
+  gs_fcat-col_opt = 'X'.
+  gs_fcat-EMPHASIZE = 'C600'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MLZM_TNM'.
+  gs_fcat-SCRTEXT_L = 'Malzeme Tanımı'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'IKML_KYNG'.
+  gs_fcat-SCRTEXT_L = 'İkmal Kaynağı'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'URTM_YERI'.
+  gs_fcat-SCRTEXT_L ='Üretim Yeri'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'IHT_TURU'.
+  gs_fcat-SCRTEXT_L = 'İhtiyaç Türü'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'IHT_GSTRGESI'.
+  gs_fcat-SCRTEXT_L = 'İht. Göstergesi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'TKTM_GSTRGESI'.
+  gs_fcat-SCRTEXT_L = 'Tüketim Göstergesi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ETKIN'.
+  gs_fcat-SCRTEXT_L = 'Etkin'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLNL_TKTM'.
+  gs_fcat-SCRTEXT_L = 'Plnl.tüketim gös'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLANLAMA'.
+  gs_fcat-SCRTEXT_L = 'Planlama göstergesi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLNLM_SNRYS'.
+  gs_fcat-SCRTEXT_L = 'Planlama senaryosu'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'SPRS_KALEMI'.
+  gs_fcat-SCRTEXT_L =  'Müşteri sprş.kalemi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MSTRI_SPRS'.
+  gs_fcat-SCRTEXT_L =  'Müşteri siparişi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'SILME_GSTRG'.
+  gs_fcat-SCRTEXT_L = 'Silme göstergesi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'TARIH '.
+  gs_fcat-SCRTEXT_L =  'Tsl./tml.bitiş trm.'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLNL_MIKTAR'.
+  gs_fcat-SCRTEXT_L = 'Planlanan miktar'.
+  gs_fcat-col_opt = 'X'.
+  gs_fcat-EMPHASIZE = 'C600'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CEKME_MKTR'.
+  gs_fcat-SCRTEXT_L = 'Çekme miktarı'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'TRH_TIPI'.
+  gs_fcat-SCRTEXT_L = 'Tarih tipi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'DNM_GSTRGESI'.
+  gs_fcat-SCRTEXT_L = 'Dönem göstergesi'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'DONEM '.
+  gs_fcat-SCRTEXT_L = 'Dönem'.
+  gs_fcat-col_opt = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+
+
+ENDFORM.
+
+FORM set_layout_iht_raporu.
+  gs_layout-zebra = 'X'.
+  gs_layout-cwidth_opt = 'X'.
+  gs_layout-col_opt = 'X'.
+ENDFORM.
+
+
+FORM display_alv_iht_raporu.
+  IF go_grid IS INITIAL.
+
+*    CREATE OBJECT go_container_dty
+*    EXPORTING
+*      container_name = 'CC_DETAY'.
+
+    CREATE OBJECT go_grid
+    EXPORTING
+      i_parent = go_container.
+
+
+    CALL METHOD go_grid->set_table_for_first_display(
+    EXPORTING
+      is_layout = gs_layout
+    CHANGING
+      it_outtab = gt_iht_list
+      it_fieldcatalog = gt_fcat
+      ).
+  ELSE.
+    CALL METHOD go_grid->refresh_table_display.
+  ENDIF.
+ENDFORM.
+
+FORM get_selected_data.
+
+  TYPES: BEGIN OF gty_malz_tanim,
+    malzeme    TYPE matnr,
+    malz_tanim TYPE maktx,
+  END OF gty_malz_tanim.
+
+
+  TYPES: BEGIN OF gty_ikbal_kyn,
+    malzeme    TYPE matnr,
+    ikbal_kyn  TYPE labor,
+  END OF gty_ikbal_kyn.
+
+  DATA:  lt_makt    TYPE SORTED TABLE OF gty_malz_tanim WITH UNIQUE KEY
+        MALZEME,
+        ls_makt    TYPE gty_malz_tanim,
+        lt_mara    TYPE SORTED TABLE OF gty_ikbal_kyn WITH UNIQUE KEY
+        MALZEME,
+        ls_mara    TYPE gty_ikbal_kyn,
+        lt_collect TYPE TABLE OF gty_total,
+        ls_collect TYPE gty_total.
+
+  CLEAR : gt_iht_list[], gs_iht_list, lt_collect[], ls_collect.
+
+  LOOP AT gt_total INTO gs_total.
+
+    ls_collect-MALZEME = gs_total-MALZEME.
+    COLLECT ls_collect INTO lt_collect.
+
+  ENDLOOP.
+
+
+  SELECT matnr
+  maktx
+  FROM makt
+  INTO TABLE lt_makt
+  FOR ALL ENTRIES IN lt_collect
+  WHERE MATNR = lt_collect-MALZEME
+  AND spras = sy-langu.
+
+  SELECT matnr
+  labor
+  FROM mara
+  INTO  TABLE lt_mara
+  FOR ALL ENTRIES IN lt_collect
+  WHERE MATNR = lt_collect-MALZEME.
+
+
+  LOOP AT gt_total INTO gs_total.
+    CLEAR : gs_iht_list.
+
+    MOVE-CORRESPONDING gs_total TO gs_iht_list.
+
+    READ TABLE lt_makt INTO ls_makt WITH TABLE KEY MALZEME =
+    gs_total-MALZEME.
+
+    IF sy-subrc = 0.
+      gs_iht_list-MLZM_TNM = ls_makt-malz_tanim.
+    ENDIF.
+
+    READ TABLE lt_mara INTO ls_mara WITH TABLE KEY MALZEME =
+    gs_total-MALZEME.
+
+    IF sy-subrc = 0.
+      gs_iht_list-IKML_KYNG = ls_mara-ikbal_kyn.
+    ENDIF.
+
+    APPEND gs_iht_list TO gt_iht_list.
+
+  ENDLOOP.
+
+ENDFORM.

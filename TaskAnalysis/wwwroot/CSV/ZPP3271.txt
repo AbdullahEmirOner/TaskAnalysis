@@ -1,0 +1,201 @@
+*&---------------------------------------------------------------------*
+*& Report  ZPPR_BILESEN_DEGISIKLIK_LOG
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  zppr_bilesen_degisiklik_log.
+
+TABLES : aenr.
+PARAMETERS : p_datum TYPE aenr-aedat .
+
+
+START-OF-SELECTION.
+  PERFORM get_data.
+
+*&---------------------------------------------------------------------*
+*&      Form  GET_DATA
+*&---------------------------------------------------------------------*
+FORM get_data .
+  DATA : BEGIN OF lt_bil OCCURS 0,
+         aennr TYPE aenr-aennr ,
+         idnrk TYPE zpp_yayin_esleme-idnrk ,
+         aplfz TYPE eine-aplfz,
+         guncel_acik TYPE mseg-menge,
+         log_acik TYPE mseg-menge,
+         END OF lt_bil.
+  DATA : BEGIN OF itab_zmm0881 OCCURS 0 ,
+          infnr LIKE eina-infnr ,
+          lifnr LIKE eina-lifnr ,
+          matnr LIKE eina-matnr ,
+          ekorg LIKE eine-ekorg ,
+          esokz LIKE eine-esokz ,
+          aplfz LIKE eine-aplfz,
+          werks LIKE eine-werks ,
+          meins LIKE eina-meins ,
+          exprf LIKE eine-exprf ,
+          ernam LIKE eina-ernam ,
+          erdat LIKE eina-erdat ,
+          idnlf LIKE eina-idnlf ,
+         END OF itab_zmm0881.
+  DATA : BEGIN OF itab_zmm0380 OCCURS 0,
+         ebeln TYPE ekpo-ebeln,
+         ebelp TYPE ekpo-ebelp,
+         etenr TYPE eket-etenr,
+         matnr TYPE ekpo-matnr,
+         eindt TYPE eket-eindt,
+         menge TYPE eket-menge,
+         wemng TYPE eket-wemng,
+         END OF itab_zmm0380.
+  DATA : lv_tabix TYPE sy-tabix.
+  DATA : lv_dat TYPE sy-datum.
+  DATA : lt_log TYPE STANDARD TABLE OF zpp_sda_sat_log.
+  DATA : ls_log TYPE zpp_sda_sat_log.
+  DATA : lv_log_tr TYPE sy-datum.
+  DATA : ls_bil_deg_log TYPE zpp_bil_deg_log.
+  DATA : lv_versn TYPE zpp_bil_deg_log-versn.
+
+
+  SELECT MAX( versn ) FROM zpp_bil_deg_log INTO lv_versn
+   WHERE log_tr = p_datum.
+  ADD 1 TO lv_versn.
+
+  SELECT aenr~aennr zpp_yayin_esleme~idnrk
+  INTO TABLE lt_bil
+  FROM zpp_yayin_esleme
+  INNER JOIN mara
+  ON mara~matnr EQ zpp_yayin_esleme~idnrk
+  INNER JOIN aenr
+    ON aenr~aennr EQ zpp_yayin_esleme~muh_aennr
+       WHERE aenr~aedat EQ p_datum
+         AND ( mara~labor EQ 'A' OR
+               mara~labor EQ 'B' ).
+
+  SELECT aenr~aennr zpp_yayin_esleme~idnrk
+  APPENDING TABLE lt_bil
+  FROM zpp_yayin_esleme
+  INNER JOIN mara
+  ON mara~matnr EQ zpp_yayin_esleme~idnrk
+  INNER JOIN aenr
+    ON aenr~aennr EQ zpp_yayin_esleme~pln_aennr
+       WHERE aenr~aedat EQ p_datum
+         AND ( mara~labor EQ 'A' OR
+               mara~labor EQ 'B' ).
+
+  lv_log_tr = p_datum - 1.
+
+  CHECK lt_bil[] IS NOT INITIAL.
+
+  SORT lt_bil BY idnrk.
+  DELETE ADJACENT DUPLICATES FROM lt_bil COMPARING idnrk.
+
+  SELECT
+   eina~infnr
+   eina~lifnr
+   eina~matnr
+   eine~ekorg
+   eine~esokz
+   eine~aplfz
+   eine~werks
+   eina~meins
+   eine~exprf
+   eina~ernam
+   eina~erdat
+   eina~idnlf
+  INTO TABLE itab_zmm0881
+  FROM eina
+  INNER JOIN eine
+  ON eina~infnr EQ eine~infnr
+  FOR ALL entries IN lt_bil
+  WHERE eina~matnr EQ lt_bil-idnrk
+    AND eine~werks EQ '1000'
+    AND eine~loekz EQ space
+    AND eina~loekz EQ space.
+
+  SELECT b~ebeln
+         b~ebelp
+         c~etenr
+         b~matnr
+         c~eindt
+         c~menge
+         c~wemng
+        INTO TABLE itab_zmm0380
+        FROM ekko AS a
+        INNER JOIN ekpo AS b
+        ON a~ebeln = b~ebeln
+        INNER JOIN eket AS c
+        ON b~ebeln = c~ebeln AND
+           b~ebelp = c~ebelp
+        FOR ALL ENTRIES IN lt_bil
+        WHERE a~loekz EQ space   AND
+              ( a~bsart EQ 'LP' OR
+                a~bsart EQ 'LPA' ) AND
+              b~loekz EQ space   AND
+              b~matnr EQ lt_bil-idnrk AND
+              b~werks EQ '1000' AND
+              b~elikz = '' .
+
+  SELECT * FROM zpp_sda_sat_log INTO TABLE lt_log
+     FOR ALL ENTRIES IN lt_bil
+   WHERE log_tr EQ lv_log_tr
+     AND matnr EQ lt_bil-idnrk
+     AND werks EQ '1000'.
+
+  SORT itab_zmm0881 BY matnr ASCENDING
+                       erdat DESCENDING
+                       esokz ASCENDING.
+
+  SORT itab_zmm0380 BY matnr ASCENDING.
+  SORT lt_log BY matnr ASCENDING.
+
+  LOOP AT lt_bil.
+    CLEAR itab_zmm0881.
+    READ TABLE itab_zmm0881 WITH KEY matnr = lt_bil-idnrk
+         BINARY SEARCH.
+    lt_bil-aplfz = itab_zmm0881-aplfz.
+    lv_dat = lt_bil-aplfz + p_datum.
+    READ TABLE itab_zmm0380 TRANSPORTING NO FIELDS
+    WITH KEY matnr = lt_bil-idnrk
+         BINARY SEARCH.
+    IF sy-subrc IS INITIAL.
+      lv_tabix = sy-tabix.
+      LOOP AT itab_zmm0380 FROM lv_tabix.
+        IF itab_zmm0380-matnr NE lt_bil-idnrk.
+          EXIT.
+        ENDIF.
+        IF lv_dat >= itab_zmm0380-eindt.
+          lt_bil-guncel_acik = lt_bil-guncel_acik +
+                               itab_zmm0380-menge - itab_zmm0380-wemng.
+        ENDIF.
+      ENDLOOP.
+    ENDIF.
+
+    READ TABLE lt_log TRANSPORTING NO FIELDS
+    WITH KEY matnr = lt_bil-idnrk
+         BINARY SEARCH.
+    IF sy-subrc IS INITIAL.
+      lv_tabix = sy-tabix.
+      LOOP AT lt_log INTO ls_log FROM lv_tabix.
+        IF ls_log-matnr NE lt_bil-idnrk.
+          EXIT.
+        ENDIF.
+        IF lv_dat >= ls_log-dat00.
+          lt_bil-log_acik = lt_bil-log_acik +
+                            ls_log-menge.
+        ENDIF.
+      ENDLOOP.
+    ENDIF.
+
+    CLEAR ls_bil_deg_log.
+    MOVE-CORRESPONDING lt_bil TO ls_bil_deg_log.
+    ls_bil_deg_log-log_tr = p_datum.
+    ls_bil_deg_log-versn = lv_versn.
+    MODIFY zpp_bil_deg_log FROM ls_bil_deg_log.
+
+  ENDLOOP.
+
+  COMMIT WORK AND WAIT.
+
+ENDFORM.                    " GET_DATA

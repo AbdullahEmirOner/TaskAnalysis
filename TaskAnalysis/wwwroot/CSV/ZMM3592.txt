@@ -1,0 +1,334 @@
+*&---------------------------------------------------------------------*
+*& Report ZMM_ACIK_SAS_RAPORU
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZMM_ACIK_SAS_RAPORU.
+type-pools: abap.
+tables: ekko, ekpo.
+
+*&**********************************************************************
+*&                      S E L E C T I O N  S C R E E N
+*&**********************************************************************
+selection-screen begin of block b1 with frame title text-001.
+select-options: s_ebeln for ekko-ebeln,
+                s_aedat for ekko-aedat,
+                s_lifnr for ekko-lifnr,
+                s_ekorg for ekko-ekorg,
+                s_matnr for ekpo-matnr,
+                s_werks for ekpo-werks.
+selection-screen end of block b1.
+
+selection-screen begin of block b2 with frame title text-002.
+select-options: s_bukrs for ekko-bukrs,
+                s_bstyp for ekko-bstyp,
+                s_bsart for ekko-bsart,
+                s_bsakz for ekko-bsakz,
+                s_memory for ekko-memory,
+                s_pstat for ekko-procstat.
+selection-screen end of block b2.
+
+*&**********************************************************************
+*&                      V A R I A B L E S
+*&**********************************************************************
+data: it_data type table of zmm_s_acik_sas_raporu,
+      wa_data type zmm_s_acik_sas_raporu.
+data: it_ekbe type table of ekbe,
+      wa_ekbe type ekbe.
+field-symbols: <fs_data> type zmm_s_acik_sas_raporu.
+
+*<< ALV değişkenleri
+data: lo_alv       type ref to cl_salv_table,
+      lo_columns   type ref to cl_salv_columns_table,
+      lo_column    type ref to cl_salv_column,
+      lo_functions type ref to cl_salv_functions.
+
+"$. Endregion TOP
+
+*&**********************************************************************
+*&                      E V E N T S
+*&**********************************************************************
+initialization.
+  perform init.
+
+start-of-selection.
+  perform get_data.
+
+end-of-selection.
+  perform display_data.
+
+*&**********************************************************************
+*&                      S U B R O U T I N E S
+*&**********************************************************************
+*&---------------------------------------------------------------------*
+*&      Form  INIT
+*&---------------------------------------------------------------------*
+form init .
+*<< Şirket kodu
+  s_bukrs = 'IEQOTKR'.
+  append s_bukrs.
+
+*<< Satınalma belgesi tp
+  s_bstyp = 'IEQF'.
+  append s_bstyp.
+
+*<< SA belgesi türü
+  s_bsart = 'EEQLA'.
+  append s_bsart.
+
+  s_bsart = 'EEQLPA'.
+  append s_bsart.
+
+*<< Denetim göstergesi
+  s_bsakz = 'IEQ'.
+  append s_bsakz.
+
+*<< Tamamlanmadı
+  s_memory = 'IEQ'.
+  append s_memory.
+
+*<< İşleme durumu
+  s_pstat = 'IEQ02'.
+  append s_pstat.
+
+  s_pstat = 'IEQ05'.
+  append s_pstat.
+
+endform.                    " INIT
+*&---------------------------------------------------------------------*
+*&      Form  GET_DATA
+*&---------------------------------------------------------------------*
+form get_data .
+  refresh: it_data, it_ekbe.
+
+  select ekko~ebeln ekpo~ebelp ekko~bsart ekko~aedat ekko~lifnr ekko~zterm
+         ekko~ekorg ekko~ekgrp ekko~waers ekko~reswk
+         ekpo~matnr ekpo~werks ekpo~menge ekpo~meins ekpo~umrez ekpo~umren
+         ekpo~netpr ekpo~peinh ekpo~mwskz ekpo~pstyp ekpo~knttp ekpo~webre
+         ekpo~lmein ekpo~sobkz ekpo~bstae ekpo~inco1 ekpo~inco2 ekpo~xersy
+         ekpo~wepos ekpo~repos ekpo~webre ekpo~elikz
+    from ekko
+    join ekpo on ekpo~ebeln eq ekko~ebeln
+    into corresponding fields of table it_data
+    where ekko~ebeln    in s_ebeln
+      and ekko~bukrs    in s_bukrs
+      and ekko~bstyp    in s_bstyp
+      and ekko~bsart    in s_bsart
+      and ekko~bsakz    in s_bsakz
+      and ekko~loekz    eq space
+      and ekko~aedat    in s_aedat
+      and ekko~lifnr    in s_lifnr
+      and ekko~memory   in s_memory
+      and ekko~procstat in s_pstat
+      and ekpo~loekz    eq space
+      and ekpo~matnr    in s_matnr
+      and ekpo~werks    in s_werks
+      and ekpo~erekz    eq space
+      and ekpo~repos    eq abap_true
+      and ekpo~retpo    eq space.
+
+  check it_data[] is not initial.
+  sort it_data by ebeln ebelp.
+
+  perform check_open_po.
+endform.                    " GET_DATA
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_DATA
+*&---------------------------------------------------------------------*
+form display_data .
+  cl_salv_table=>factory(
+    importing
+      r_salv_table = lo_alv
+    changing
+      t_table      = it_data ).
+
+  lo_columns = lo_alv->get_columns( ).
+  lo_columns->set_optimize( abap_true ).
+
+  lo_column ?= lo_columns->get_column('DEL_FLAG').
+  lo_column->set_technical( abap_true ).
+
+  perform set_column_text using: 'FARK_MG_MENGE' text-f01,
+                                 'FARK_FT_MENGE' text-f02,
+                                 'FARK_FT_NETWR' text-f03.
+
+  lo_functions = lo_alv->get_functions( ).
+  lo_functions->set_all( abap_true ).
+
+  lo_alv->display( ).
+endform.                    " DISPLAY_DATA
+*&---------------------------------------------------------------------*
+*&      Form  CHECK_OPEN_PO
+*&---------------------------------------------------------------------*
+*EKKO-BSTYP     = F olmalı ( Satınalma Siparişi )
+*EKKO-PROCSTAT  = 02 ya da 05 olacak ( Etkin veya onaylı )
+*EKKO-BSAKZ     = boş olmalı ( Dolu olması nakil ya da sat manasındadır )
+*EKKO-MEMORY    = boş olmalı ( Dolu olması henüz tam olarak kayıtlı olmadığını, işaretli belge olduğunu gösterir )
+*EKKO-LOEKZ     = boş olmalı ( Arşivlemek için silinmemiş olmalı )
+*
+*EKPO-LOEKZ = boş olmalı ( Silinmiş ya da bloke edilmiş olmamalı )
+*EKPO-REPOS = X olmalı ( Yani fatura girişi olacak demek )
+*EKPO-EREKZ = boş olmalı ( Dolu olursa bu kaleme fatura girilmiş ve kapatılmış demektir )
+*EKPO-RETPO = boş olmalı ( Yani iade kalemi olmayacak )
+*
+*EKPO-WEBRE = Mal giriş temelli fatura kontrolü. Bu işaretli ya da işaretsiz olabilir. İşaretliler için ayrı hesaplama, işaretsizler için ayrı hesaplama yapılacak.
+*EKPO-WEPOS = İşaretli olup olmamasına göre hesaplama değişiklik gösterecek.
+*
+*EKPO-MENGE miktarını alalım. Bu SAS Kalem miktarıdır. Buna A diyelim.
+*
+*WEPOS ve WEBRE ye göre 3 alternatifli hesaplama yapacağız
+*
+* 1-WEPOS = boş ise WEBRE zaten boş olur. Olmak zorundadır.
+*   Bu pozisyonda mal girişi olamaz.
+*   EKBE-EBELN ve EKBE-EBELP bizim SAS belgesindeki kalemimiz.
+*   Bu pozisyonda EKBE-VGABE = 2 ve EKBE-BEWTP = Q  olan satırların SHKZG alanı S olanlar pozitif, H olanlar negatif olmak üzere;
+*   MENGE alanları toplanır. Bu miktar B olsun. Bu faturalanan miktardır.
+*   A - B sonucu C olsun; bu değer pozitif ise, bize fatura girilebilecek miktarı verir.
+*   Benzer şekilde; DMBTR alanları SHKZG ye göre toplanır. Bu değere D diyelim. Bu alan bize şimdiye kadar faturalanan değeri verir.
+*   Toplam faturalanabilecek kalem tutarı: ( EKPO-MENGE ) x ( EKPO-NETPR / EKPO-PEINH ) dır. Buna F diyelim.
+*   Toplam faturalanan değer: D idi.
+*   Kalem için faturalanabilecek fatura değeri F - D dir.
+*   EKPO-MENGE = B ==> artık bu kaleme fatura girilemez.
+*
+* 2-WEPOS = 'X' (mal girişi var) ve WEBRE = boş ise (MG temelli fatura kontrolü yok);
+*   Bu pozisyonda mal girişi olur. Ama fatura girişi mal girişine bağlı değildir.
+*   Bir üsttekine benzer kurgulanabilir.
+*
+* 3-WEPOS = 'X' (mal girişi var) ve WEBRE = 'X' ise (MG temelli fatura kontrolü var);
+*   Bu pozisyonda mal girişi olur. Fatura girişi mal girişine bağlıdır.
+*   EKBE-EBELN ve EKBE-EBELP ile ilgili satır için VGABE = 1 olan satırların SHKZG alanı S olanlar pozitif H olanlar negatif olmak üzere MENGE alanları toplanır.
+*   Bu toplam değere MT diyelim (toplam mal giriş).
+*   VGABE = 2 olan satırların SHKZG ye göre MENGE alanlarını toplayalım. Buna FT diyelim (toplam fatura miktarı).
+*   MT = FT ==> fatura girişi yapılamaz.
+*   MT < EKPO-MENGE ==> mal girişi yapıldıktan sonra fatura girişi yapılabilir.
+*   MT = EKPO-MENGE ==> zaten gelen gelmiş faturalar kaydedilmiştir. Bu kalemler zaten bu noktaya kadar gelemez. Çünkü yukarıda verdiğimiz koşullar bunu eler.
+*   MT > FT ==> Fatura girilebilir. MT - FT miktarı kadar fatura girişi mümkündür.
+*   Tutarsal olarak tam olarak bir kısıt veremeyiz. Çünkü fatura tutarı biraz farklı gelebilir. Ama beklenen ( MT - FT ) * EKPO-NETPR / EKPO-PEINH kadar fatura bekleriz.
+*&---------------------------------------------------------------------*
+form check_open_po .
+  data: lv_menge_po type ekpo-menge,
+        lv_netwr_po type ekpo-menge.
+  data: lv_menge_we type ekpo-menge,
+        lv_menge_re type ekpo-menge,
+        lv_netwr_re type ekpo-netwr.
+  data: lt_ekbe type table of ekbe,
+        ls_ekbe type ekbe.
+  data: tabix type sy-tabix.
+
+*<< EKBE tablosunu oku
+  select *
+    from ekbe
+    into corresponding fields of table lt_ekbe
+    for all entries in it_data
+    where ebeln eq it_data-ebeln
+      and ebelp eq it_data-ebelp.
+  sort lt_ekbe by ebeln ebelp.
+
+*<< Mal, fatura girişlerini tekilleştirme
+  loop at lt_ekbe into ls_ekbe.
+    wa_ekbe-ebeln = ls_ekbe-ebeln.
+    wa_ekbe-ebelp = ls_ekbe-ebelp.
+    wa_ekbe-vgabe = ls_ekbe-vgabe.
+    wa_ekbe-bewtp = ls_ekbe-bewtp.
+    wa_ekbe-shkzg = ls_ekbe-shkzg.
+    wa_ekbe-menge = ls_ekbe-menge.
+    wa_ekbe-wrbtr = ls_ekbe-wrbtr.
+    collect wa_ekbe into it_ekbe.
+  endloop.
+
+  sort it_ekbe by ebeln ebelp vgabe bewtp ascending shkzg descending.
+
+*<< Açık siparişleri bulma
+  loop at it_data assigning <fs_data>.
+    clear: lv_menge_po,
+           lv_netwr_po.
+    clear: lv_menge_we,
+           lv_menge_re,
+           lv_netwr_re.
+
+*<< Toplam faturalanabilecek kalem miktarı
+    lv_menge_po = <fs_data>-menge.
+
+*<< Toplam faturalanabilecek kalem tutarı
+    lv_netwr_po = lv_menge_po * ( <fs_data>-netpr / <fs_data>-peinh ).
+
+    read table it_ekbe with key ebeln = <fs_data>-ebeln
+                                ebelp = <fs_data>-ebelp
+                                transporting no fields binary search.
+    tabix = sy-tabix.
+    if sy-subrc eq 0.
+      loop at it_ekbe into wa_ekbe from tabix.
+        if wa_ekbe-ebeln ne <fs_data>-ebeln or
+           wa_ekbe-ebelp ne <fs_data>-ebelp.
+          exit.
+        endif.
+
+*<<     Mal giriş göstergesi zorunlu ise miktarları al
+        if ( <fs_data>-wepos eq abap_true or <fs_data>-webre eq abap_true ) and wa_ekbe-vgabe = '1'.
+          case wa_ekbe-shkzg.
+            when 'S'.
+              lv_menge_we = lv_menge_we + wa_ekbe-menge.
+            when 'H'.
+              lv_menge_we = lv_menge_we - wa_ekbe-menge.
+          endcase.
+        endif.
+
+*<<     Fatura giriş göstergesi zorunlu ise fatura miktar ve tutarlarını al
+        if ( <fs_data>-repos eq abap_true or <fs_data>-webre eq abap_true ) and wa_ekbe-vgabe = '2'.
+          case wa_ekbe-shkzg.
+            when 'S'.
+              lv_menge_re = lv_menge_re + wa_ekbe-menge.
+              lv_netwr_re = lv_netwr_re + wa_ekbe-wrbtr.
+            when 'H'.
+              lv_menge_re = lv_menge_re - wa_ekbe-menge.
+              lv_netwr_re = lv_netwr_re - wa_ekbe-wrbtr.
+          endcase.
+        endif.
+      endloop.
+
+*<<   Mal giriş göstergesi zorunlu ve fark varsa açıktır
+      if ( <fs_data>-wepos = abap_true or <fs_data>-webre = abap_true ) and lv_netwr_po <> lv_menge_we.
+        <fs_data>-fark_mg_menge = lv_menge_po - lv_menge_we.
+      endif.
+
+*<<   Fatura giriş göstergesi zorunlu ve fark varsa açıktır
+      if ( <fs_data>-repos = abap_true or <fs_data>-webre = abap_true ) and lv_netwr_po <> lv_menge_re.
+        <fs_data>-fark_ft_menge = lv_menge_po - lv_menge_re.
+        <fs_data>-fark_ft_netwr = lv_netwr_po - lv_netwr_re.
+      endif.
+
+*<<   Fark yoksa kapanmıştır, tablodan silinecek
+      if <fs_data>-fark_mg_menge is initial and
+         <fs_data>-fark_ft_menge is initial.
+        <fs_data>-del_flag = abap_true.
+      endif.
+    else. "EKBE'de hareket yoksa sas açıktır
+      <fs_data>-fark_mg_menge = lv_menge_po.
+      <fs_data>-fark_ft_menge = lv_menge_po.
+      <fs_data>-fark_ft_netwr = lv_netwr_po.
+      continue.
+    endif.
+  endloop.
+
+*<< Bakiyesi olmayan kapanmışları tablodan sil
+  delete it_data where del_flag eq abap_true.
+endform.                    " CHECK_OPEN_PO
+*&---------------------------------------------------------------------*
+*&      Form  SET_COLUMN_TEXT
+*&---------------------------------------------------------------------*
+form set_column_text  using    p_column_name type lvc_fname
+                               p_text        type itex132.
+  data: short_text  type scrtext_s,
+        medium_text type scrtext_m,
+        long_text   type scrtext_l.
+
+  lo_column ?= lo_columns->get_column( p_column_name ).
+
+  short_text  = p_text.
+  medium_text = p_text.
+  long_text   = p_text.
+
+  lo_column->set_short_text( short_text ).
+  lo_column->set_medium_text( medium_text ).
+  lo_column->set_long_text( long_text ).
+endform.                    " SET_COLUMN_TEXT
