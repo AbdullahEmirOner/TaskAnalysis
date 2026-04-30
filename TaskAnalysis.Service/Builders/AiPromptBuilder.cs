@@ -76,7 +76,8 @@ public static class AiPromptBuilder
 ""recommendation"": ""string"",
 ""projectIdea"": ""string"",
 ""similarProjectName"": ""string"",
-""similarProjectLink"": ""string""
+""similarProjectLink"": ""string"",
+""responsiblePeople"":""string""
 }
 ]");
 

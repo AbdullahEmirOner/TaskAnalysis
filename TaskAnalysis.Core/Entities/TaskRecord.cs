@@ -14,6 +14,7 @@ namespace TaskAnalysis.Core.Entities
         public string Amac { get; set; } = string.Empty;
         public string Yetki { get; set; } = string.Empty;
         public string AnaSorumluluk { get; set; } = string.Empty;
+        public string ad_soyad { get; set; } = string.Empty;
 
         public string SourceFile { get; set; } = string.Empty; // Hangi CSV' den geldiği
     }

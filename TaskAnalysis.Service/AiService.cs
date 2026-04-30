@@ -111,35 +111,32 @@ public class AiService : IAiService
             .GetString() ?? string.Empty;
     }
 
-    public List<UniqueTaskDto> ParseUniqueTasks(string json)
+    public AiTaskAnalysisDto ParseTaskAnalysis(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-            return new List<UniqueTaskDto>();
-
         try
         {
-            var startIndex = json.IndexOf("[");
-            var endIndex = json.LastIndexOf("]");
+            var start = json.IndexOf('{');
+            var end = json.LastIndexOf('}');
 
-            if (startIndex == -1 || endIndex == -1)
-                return new List<UniqueTaskDto>();
+            if (start == -1 || end == -1)
+                return new AiTaskAnalysisDto { Recommendation = json };
 
-            var cleanJson = json.Substring(startIndex, endIndex - startIndex + 1);
+            var cleanJson = json.Substring(start, end - start + 1);
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            var result = JsonSerializer.Deserialize<List<UniqueTaskDto>>(cleanJson, options);
-
-            return result ?? new List<UniqueTaskDto>();
+            return JsonSerializer.Deserialize<AiTaskAnalysisDto>(
+                cleanJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }
+            ) ?? new AiTaskAnalysisDto { Recommendation = json };
         }
         catch
         {
-            return new List<UniqueTaskDto>();
+            return new AiTaskAnalysisDto { Recommendation = json };
         }
     }
+
 
     private AiDirectorateDto CreateFallback(string directorateName)
     {
