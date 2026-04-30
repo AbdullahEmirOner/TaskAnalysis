@@ -100,9 +100,9 @@ public class AnalysisController : ControllerBase
     */
 
     [HttpGet("ai-analysis/{directorate}")]
-    public async Task<IActionResult> GetAiAnalysis(string directorate)
+    public async Task<IActionResult> GetAiAnalysis(string directorate, string department)
     {
-        var cacheKey = $"ai-analysis-{directorate.ToLower()}";
+        var cacheKey = $"ai-analysis-{directorate.ToLower()}-{department.ToLower()}";
 
         if (_cache.TryGetValue(cacheKey, out var cachedResult))
             return Ok(cachedResult);
@@ -115,52 +115,76 @@ public class AnalysisController : ControllerBase
 
             var records = _csvReaderService.ReadAllCsv(folderPath);
 
+            // Direktörlük filtresi
             var filtered = records
                 .Where(x => !string.IsNullOrWhiteSpace(x.Birim)
-                         && x.Birim.Equals(directorate, StringComparison.OrdinalIgnoreCase))
+                    && x.Birim.Equals(directorate, StringComparison.OrdinalIgnoreCase))
                 .ToList();
+
+            // Departman filtresi
+            if (!string.IsNullOrWhiteSpace(department))
+            {
+                filtered = filtered
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Mudurluk)
+                        && x.Mudurluk.Equals(department, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
             if (!filtered.Any())
-                return NotFound("Bu direktörlük için veri bulunamadı.");
+                return NotFound(
+                    string.IsNullOrWhiteSpace(department)
+                    ? "Bu direktörlük için veri bulunamadı."
+                    : "Bu departman için veri bulunamadı."
+                );
 
-            var uniqueTasks = filtered
-                .Where(x => !string.IsNullOrWhiteSpace(x.AnaSorumluluk))
-                .GroupBy(x => x.AnaSorumluluk.Trim().ToLower())
-                .Select(g => new UniqueTaskDto
-                {
-                    Task = g.First().AnaSorumluluk,
-                    Departments = g.Select(x => x.Mudurluk)
-                                   .Where(x => !string.IsNullOrWhiteSpace(x))
-                                   .Distinct(StringComparer.OrdinalIgnoreCase)
-                                   .OrderBy(x => x)
-                                   .ToList()
-                })
+            // Chunk üretimi (20’lik parçalar)
+            var chunks = filtered
+                .Select((record, index) => new { record, index })
+                .GroupBy(x => x.index / 20)
+                .Select(g => string.Join("\n", g.Select(x =>
+                    $"Müdürlük: {x.record.Mudurluk} | " +
+                    $"Birim: {x.record.Birim} | " +
+                    $"Amaç: {x.record.Amac} | " +
+                    $"Yetki: {x.record.Yetki} | " +
+                    $"Ana Sorumluluk: {x.record.AnaSorumluluk}"
+                )))
                 .ToList();
 
-            // Normalize
-            var normalizePrompt = AiPromptBuilder.BuildNormalizeTasksPrompt(uniqueTasks);
-            var normalizeResult = await _aiService.AnalyzeAsync(normalizePrompt);
-            var normalizedTasks = _aiService.ParseUniqueTasks(normalizeResult);
-
-            // Analysis
-            var analysisPrompt = AiPromptBuilder.BuildUniqueTasksPrompt(normalizedTasks);
-            var analysisResult = await _aiService.AnalyzeAsync(analysisPrompt);
-            var analyzedTasks = _aiService.ParseUniqueTasks(analysisResult);
-
-            var result = new DirectortateUniqueTaskAnalysisDto
+            // Parça analizleri
+            var partialAnalyses = new List<string>();
+            foreach (var chunk in chunks)
             {
-                Directortate = directorate,
-                Tasks = analyzedTasks
+                var chunkPrompt = AiPromptBuilder.BuildDepartmentChunkAnalysisPrompt(
+                    chunk,
+                    directorate,
+                    department
+                );
+
+                var partial = await _aiService.AnalyzeAsync(chunkPrompt);
+                partialAnalyses.Add(partial);
+            }
+
+            // Final analiz
+            var finalPrompt = AiPromptBuilder.BuildFinalDepartmentAnalysisPrompt(
+                partialAnalyses,
+                directorate,
+                department
+            );
+
+            var finalAnalysis = await _aiService.AnalyzeAsync(finalPrompt);
+
+            // Response
+            var result = new
+            {
+                directorate,
+                department,
+                recordCount = filtered.Count,
+                chunkCount = chunks.Count,
+                analysis = finalAnalysis,
+                fromCache = false
             };
 
-            var cacheEntry = new
-            {
-                data = result,
-                createdAt = DateTime.UtcNow,
-                expireAt = DateTime.UtcNow.AddMinutes(30)
-            };
-            // Cache set burada yapılmalı
-            _cache.Set(cacheKey, cacheEntry, TimeSpan.FromMinutes(15));
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(30));
 
             return Ok(result);
         }
@@ -219,7 +243,28 @@ public class AnalysisController : ControllerBase
     [HttpPost("chatbot-ask")]
     public async Task<IActionResult> Ask([FromBody] ChatbotQuestionDto request)
     {
+        try
+        {   
         var result = await _analysisService.AskQuestionAsync(request);
+        return Ok(result);
+        }
+        catch (Exception ex)
+        {
+          return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("index-csv")]
+    public async Task<IActionResult> IndexCsv([FromQuery] string fileName)
+    {
+        var result = await _analysisService.IndexCsvAsync(fileName);
+        return Ok(result);
+    }
+
+    [HttpPost("index-all-csv")]
+    public async Task<IActionResult> IndexAllCsv()
+    {
+        var result = await _analysisService.IndexAllCsvAsync();
         return Ok(result);
     }
 

@@ -15,5 +15,7 @@ namespace TaskAnalysis.Core.Interfaces
         List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries);
         List<TaskRecord> GetRelevantRecords(List<TaskRecord> records, string question, int maxCount = 50);
         Task<string> AskQuestionAsync(ChatbotQuestionDto request);
+        Task<object> IndexCsvAsync(string fileName);
+        Task<object> IndexAllCsvAsync();
     }
 }

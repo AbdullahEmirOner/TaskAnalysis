@@ -127,5 +127,67 @@ public static class AiPromptBuilder
         return sb.ToString();
     }
 
+    public static string BuildDepartmentChunkAnalysisPrompt(string context, string directorate, string? department)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("You are an AI assistant specializing in corporate task analysis.");
+        sb.AppendLine("Analyze the following task records.");
+        sb.AppendLine("Base your analysis ONLY on the given records.");
+        sb.AppendLine("Answer in Turkish.");
+        sb.AppendLine();
+
+        sb.AppendLine($"Directorate: {directorate}");
+
+        if (!string.IsNullOrWhiteSpace(department))
+            sb.AppendLine($"Department: {department}");
+
+        sb.AppendLine();
+        sb.AppendLine("For this chunk, extract the following:");
+        sb.AppendLine("1. Main task themes");
+        sb.AppendLine("2. Repeated responsibilities");
+        sb.AppendLine("3. Tasks that could be improved with automation or AI");
+        sb.AppendLine("4. Possible project ideas");
+        sb.AppendLine();
+        sb.AppendLine("Task records:");
+        sb.AppendLine(context);
+
+        return sb.ToString();
+    }
+    public static string BuildFinalDepartmentAnalysisPrompt(List<string> partialAnalyses, string directorate, string? department)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("You are an AI assistant performing high-level corporate analysis.");
+        sb.AppendLine("Below are partial analyses generated for the same directorate/department.");
+        sb.AppendLine("Merge them into a single, consistent, and professional final report.");
+        sb.AppendLine("Combine repeated items.");
+        sb.AppendLine("Answer in Turkish.");
+        sb.AppendLine();
+
+        sb.AppendLine($"Directorate: {directorate}");
+
+        if (!string.IsNullOrWhiteSpace(department))
+            sb.AppendLine($"Department: {department}");
+
+        sb.AppendLine();
+        sb.AppendLine("The final report should include the following sections:");
+        sb.AppendLine("1. General Summary");
+        sb.AppendLine("2. Main Task Areas");
+        sb.AppendLine("3. Repeated Tasks");
+        sb.AppendLine("4. AI / Automation Opportunities");
+        sb.AppendLine("5. Suggested Project Ideas");
+        sb.AppendLine("6. Expected Contribution");
+        sb.AppendLine();
+
+        sb.AppendLine("Partial analyses:");
+        foreach (var analysis in partialAnalyses)
+        {
+            sb.AppendLine("----");
+            sb.AppendLine(analysis);
+        }
+
+        return sb.ToString();
+    }
 
 }

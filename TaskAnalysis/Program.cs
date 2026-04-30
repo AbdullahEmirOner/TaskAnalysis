@@ -13,8 +13,14 @@ builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<ICsvReaderService, CsvTaskReaders>();
 builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
-builder.Services.AddScoped<IAnalysisService, AnalysisService>(); 
-builder.Services.AddScoped<IVectorDbService, VectorDbService>();
+builder.Services.AddScoped<IAnalysisService, AnalysisService>();
+//builder.Services.AddScoped<IVectorDbService, VectorDbService>(); Indexlemeyi her seferinde oluþturduðu için AddScoped her yerine  AddSingleton kuyllandým
+builder.Services.AddSingleton<IVectorDbService, VectorDbService>(); //Indexlemeyi her seferinde oluþturduðu için AddScoped yerine AddSingleton kuyllandým
+/*Tür	             Davranýþ
+Scoped    ?	Her requestte yeni memory
+Transient ?	Her çaðrýda sýfýr
+Singleton ?	Tek memory, her yerde ayný
+ */
 builder.Services.AddHttpClient<IAiService, AiService>(); 
 
 //builder.Services.AddHttpClient<IAiService, AiService>();

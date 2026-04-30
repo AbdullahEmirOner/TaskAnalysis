@@ -66,7 +66,7 @@ public class AiService : IAiService
     {
         var endpoint = "https://openai-web-swe.openai.azure.com/"; // string olarak // Azure portalda Keys and Endpoint kısmında gördüğün URL
         var deploymentName = "gpt-5-chat"; // Azure’da oluşturduğun deployment adı
-        var apiKey = "APIKEY"; // Azure portalda aldığın geçerli key
+        var apiKey = "b0876dfa28804928a76ea09e8115b5e6"; // Azure portalda aldığın geçerli key
         var apiVersion = "2025-04-01-preview";
 
         if (string.IsNullOrWhiteSpace(apiKey))

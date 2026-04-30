@@ -77,10 +77,32 @@ public class VectorDbService : IVectorDbService
         return dot / (Math.Sqrt(mag1) * Math.Sqrt(mag2) + 1e-8);
     }
 
+    public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 5)
+    {
+        var allItems = _store
+            .SelectMany(file => file.Value.Select(item => new
+            {
+                FileName = file.Key,
+                item.Text,
+                Score = CosineSimilarity(item.Embedding, embedding)
+            }))
+            .OrderByDescending(x => x.Score)
+            .Take(limit)
+            .Select(x => $"Kaynak CSV: {x.FileName}\n{x.Text}")
+            .ToList();
+
+        return Task.FromResult(allItems);
+    }
+
     private class VectorItem
     {
         public string Text { get; set; } = string.Empty;
 
         public float[] Embedding { get; set; } = Array.Empty<float>();
     }
+    public int GetTotalItemCount()
+    {
+        return _store.Sum(x => x.Value.Count);
+    }
+
 }

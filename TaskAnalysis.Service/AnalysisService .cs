@@ -230,19 +230,73 @@ public class AnalysisService : IAnalysisService
         return scoredRecords;
     }
 
+    public async Task<object> IndexAllCsvAsync()
+    {
+        var folderPath = _configuration["CsvSettings:FolderPath"];
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            throw new Exception("CSV klasör yolu tanımlı değil.");
+
+        if (!Directory.Exists(folderPath))
+            throw new Exception("CSV klasörü bulunamadı.");
+
+        var files = Directory.GetFiles(folderPath, "*.csv");
+
+        var results = new List<object>();
+
+        foreach (var filePath in files)
+        {
+            var fileName = Path.GetFileName(filePath);
+
+            try
+            {
+                var result = await IndexCsvAsync(fileName);
+                results.Add(result);
+            }
+            catch (Exception ex)
+            {
+                results.Add(new
+                {
+                    fileName,
+                    indexed = false,
+                    error = ex.Message
+                });
+            }
+        }
+
+        return new
+        {
+            indexedFileCount = results.Count(x =>
+                x.GetType().GetProperty("indexed")?.GetValue(x)?.Equals(true) == true),
+            totalFileCount = files.Length,
+            files = results,
+            message = "CSV indexleme işlemi tamamlandı."
+        };
+    }
+
+
     public async Task<string> AskQuestionAsync(ChatbotQuestionDto request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question))
             throw new Exception("Soru boş olamaz.");
 
-        var safeFileName = Path.GetFileName(request.FileName);
-
         var queryEmbedding = await _embeddingService.CreateEmbeddingAsync(request.Question);
 
-        var chunks = await _vectorDb.SearchAsync(safeFileName, queryEmbedding, 5);
+        List<string> chunks;
+
+        if (!string.IsNullOrWhiteSpace(request.FileName))
+        {
+            var safeFileName = Path.GetFileName(request.FileName);
+
+            chunks = await _vectorDb.SearchAsync(safeFileName, queryEmbedding, 5);
+        }
+        else
+        {
+            chunks = await _vectorDb.SearchAllAsync(queryEmbedding, 5);
+        }
 
         if (chunks == null || chunks.Count == 0)
-            return "Bu dosya için veri bulunamadı.";
+            return "Henüz indexlenmiş veri bulunamadı. Önce index-all-csv endpointini çalıştırın.";
 
         var context = string.Join("\n\n", chunks);
 
@@ -252,6 +306,7 @@ public class AnalysisService : IAnalysisService
 
         return aiResponse;
     }
+
 
     private static bool IsValidText(string? value)
     {
@@ -306,6 +361,7 @@ public class AnalysisService : IAnalysisService
             message = "CSV başarıyla memory vector store içine indexlendi."
         };
     }
+
     private List<string> CreateChunks(List<TaskRecord> records, int chunkSize = 20)
     {
         var chunks = new List<string>();

@@ -11,6 +11,7 @@ public interface IVectorDbService
 
     bool IsIndexed(string fileName);
 
+    Task<List<string>> SearchAllAsync(float[] embedding, int limit = 5);
     void Clear(string fileName);
 }
 
