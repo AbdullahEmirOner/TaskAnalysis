@@ -14,6 +14,6 @@ namespace TaskAnalysis.Core.Interfaces
         string BuildChatbotContext(List<DirectorateSummaryDto> summeries);
         List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries);
         List<TaskRecord> GetRelevantRecords(List<TaskRecord> records, string question, int maxCount = 50);
-        Task<object> AskQuestionAsync(ChatbotQuestionDto request);
+        Task<string> AskQuestionAsync(ChatbotQuestionDto request);
     }
 }

@@ -1,15 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace TaskAnalysis.Core.Interfaces
+namespace TaskAnalysis.Core.Interfaces;
+
+public interface IVectorDbService
 {
-    public interface IVectorDbService
-    {
-        Task<List<string>> SearchAsync(float[] embedding);
-        Task InsertAsync(string text, float[] embedding);
-        Task InitAsync();
-    }
+    Task InsertAsync(string fileName, string text, float[] embedding);
+
+    Task<List<string>> SearchAsync(string fileName, float[] embedding, int limit = 3);
+
+    bool IsIndexed(string fileName);
+
+    void Clear(string fileName);
 }
+

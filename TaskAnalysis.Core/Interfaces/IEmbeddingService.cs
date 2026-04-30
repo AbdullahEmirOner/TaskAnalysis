@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace TaskAnalysis.Core.Interfaces
+namespace TaskAnalysis.Core.Interfaces;
+
+public interface IEmbeddingService
 {
-    public interface IEmbeddingService
-    {
-        Task<List<float>> CreateEmbeddingAsync(string text);
-    }
+    Task<float[]> CreateEmbeddingAsync(string text);
 }
+

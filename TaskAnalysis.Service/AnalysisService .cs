@@ -10,7 +10,7 @@ namespace TaskAnalysis.Service.Services;
 
 public class AnalysisService : IAnalysisService
 {
-    private readonly Dictionary<string, List<(string Text, List<float> Vector)>> _vectorStore = new();
+    private readonly Dictionary<string, List<(string Text,float[] Vector)>> _vectorStore = new();
     private readonly ICsvReaderService _csvReaderService;
     private readonly IEmbeddingService _embeddingService;
     private readonly IAiService _aiService;
@@ -84,36 +84,38 @@ public class AnalysisService : IAnalysisService
         .ToList();
 
         return result;
-        /*BuildDirectoraterSummaries
-         Direktorluk → Grup anahtarı (Birim adı)
-
-         ToplamKayitSayisi → O direktörlükteki toplam kayıt sayısı
-         
-         MudurlukSayisi → O direktörlükteki farklı müdürlüklerin sayısı
-         
-         Mudurlukler → Bir List<DepartmentSummaryDto>
-         
-         Her müdürlük için:
-         
-         Mudurluk → Müdürlük adı
-         
-         KayitSayisi → O müdürlükteki kayıt sayısı
-         
-         Amaclar → Distinct ve sıralı amaç listesi
-         
-         Yetkinlikler → Distinct ve sıralı yetki listesi
-         
-         AnaSorumluluklar → Distinct ve sıralı ana sorumluluk listesi
-         */
     }
 
- /*   public ChatbotContextDto BuildChatbotContext(List<DirectorateSummaryDto> summaries)
-    {
-        return new ChatbotContextDto
-        {
-            DirektorlukOzetleri = summaries ?? new List<DirectorateSummaryDto>()
-        };
-    }*/
+    /*BuildDirectoraterSummaries
+
+             Direktorluk → Grup anahtarı (Birim adı)
+
+             ToplamKayitSayisi → O direktörlükteki toplam kayıt sayısı
+
+             MudurlukSayisi → O direktörlükteki farklı müdürlüklerin sayısı
+
+             Mudurlukler → Bir List<DepartmentSummaryDto>
+
+             Her müdürlük için:
+
+             Mudurluk → Müdürlük adı
+
+             KayitSayisi → O müdürlükteki kayıt sayısı
+
+             Amaclar → Distinct ve sıralı amaç listesi
+
+             Yetkinlikler → Distinct ve sıralı yetki listesi
+
+             AnaSorumluluklar → Distinct ve sıralı ana sorumluluk listesi
+    */
+
+    /*   public ChatbotContextDto BuildChatbotContext(List<DirectorateSummaryDto> summaries)
+       {
+           return new ChatbotContextDto
+           {
+               DirektorlukOzetleri = summaries ?? new List<DirectorateSummaryDto>()
+           };
+       }*/
 
 
     public string BuildChatbotContext(List<DirectorateSummaryDto> summaries)
@@ -228,23 +230,27 @@ public class AnalysisService : IAnalysisService
         return scoredRecords;
     }
 
-    public async Task<object> AskQuestionAsync(ChatbotQuestionDto request)
+    public async Task<string> AskQuestionAsync(ChatbotQuestionDto request)
     {
+        if (request == null || string.IsNullOrWhiteSpace(request.Question))
+            throw new Exception("Soru boş olamaz.");
+
+        var safeFileName = Path.GetFileName(request.FileName);
+
         var queryEmbedding = await _embeddingService.CreateEmbeddingAsync(request.Question);
 
-        var relevantChunks = await _vectorDb.SearchAsync(queryEmbedding);
+        var chunks = await _vectorDb.SearchAsync(safeFileName, queryEmbedding, 5);
 
-        var context = string.Join("\n\n", relevantChunks);
+        if (chunks == null || chunks.Count == 0)
+            return "Bu dosya için veri bulunamadı.";
+
+        var context = string.Join("\n\n", chunks);
 
         var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question);
 
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
-        return new
-        {
-            question = request.Question,
-            answer = aiResponse
-        };
+        return aiResponse;
     }
 
     private static bool IsValidText(string? value)
@@ -260,17 +266,67 @@ public class AnalysisService : IAnalysisService
     }
     //   SicilNo;Birim;Mudurluk;Amac;Yetki;AnaSorumluluk
 
-    public async Task IndexCsvAsync(string fileName, List<TaskRecord> records)
+    public async Task<object> IndexCsvAsync(string fileName)
     {
-        var chunks = records.Select(r =>
-            $"Direktörlük: {r.Mudurluk} | Birim: {r.Birim} | Amaç: {r.Amac} | Sorumluluk: {r.AnaSorumluluk}"
-        ).ToList();
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new Exception("CSV dosya adı boş olamaz.");
+
+        var folderPath = _configuration["CsvSettings:FolderPath"];
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            throw new Exception("CSV klasör yolu tanımlı değil.");
+
+        var safeFileName = Path.GetFileName(fileName);
+        var filePath = Path.Combine(folderPath, safeFileName);
+
+        if (!File.Exists(filePath))
+            throw new Exception("CSV dosyası bulunamadı.");
+
+        var records = _csvReaderService.ReadCsv(filePath);
+
+        if (records == null || records.Count == 0)
+            throw new Exception("CSV okundu ama kayıt bulunamadı.");
+
+        var chunks = CreateChunks(records, 20);
+
+        _vectorDb.Clear(safeFileName);
 
         foreach (var chunk in chunks)
         {
             var embedding = await _embeddingService.CreateEmbeddingAsync(chunk);
-            await _vectorDb.InsertAsync(chunk, embedding);
+            await _vectorDb.InsertAsync(safeFileName, chunk, embedding);
         }
+
+        return new
+        {
+            fileName = safeFileName,
+            indexed = true,
+            recordCount = records.Count,
+            chunkCount = chunks.Count,
+            message = "CSV başarıyla memory vector store içine indexlendi."
+        };
+    }
+    private List<string> CreateChunks(List<TaskRecord> records, int chunkSize = 20)
+    {
+        var chunks = new List<string>();
+
+        for (int i = 0; i < records.Count; i += chunkSize)
+        {
+            var group = records.Skip(i).Take(chunkSize).ToList();
+
+            var chunk = string.Join("\n", group.Select((r, index) =>
+                $"Kayıt: {i + index + 1} | " +
+                $"Müdürlük: {r.Mudurluk} | " +
+                $"Birim: {r.Birim} | " +
+                $"Amaç: {r.Amac} | " +
+                $"Yetki: {r.Yetki} | " +
+                $"Ana Sorumluluk: {r.AnaSorumluluk}"
+            ));
+
+            chunks.Add(chunk);
+        }
+
+        return chunks;
     }
 
     private double CosineSimilarity(float[] v1, float[] v2)
@@ -302,4 +358,5 @@ public class AnalysisService : IAnalysisService
 
         return scored;
     }
+
 }

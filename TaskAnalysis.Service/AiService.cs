@@ -10,8 +10,10 @@ namespace TaskAnalysis.Service;
 public class AiService : IAiService
 {
     private readonly HttpClient _httpClient;
-    /*HttpClient, REST API’lere veya herhangi bir web servisine GET, POST, PUT, DELETE 
-     *gibi HTTP istekleri göndermeye yarar.*/
+    /*
+     HttpClient, REST API’lere veya herhangi bir web servisine GET, POST, PUT, DELETE 
+     gibi HTTP istekleri göndermeye yarar.
+    */
     private readonly IConfiguration _configuration;
 
     public AiService(HttpClient httpClient, IConfiguration configuration)
@@ -64,7 +66,7 @@ public class AiService : IAiService
     {
         var endpoint = "https://openai-web-swe.openai.azure.com/"; // string olarak // Azure portalda Keys and Endpoint kısmında gördüğün URL
         var deploymentName = "gpt-5-chat"; // Azure’da oluşturduğun deployment adı
-        var apiKey = "b0876dfa28804928a76ea09e8115b5e6"; // Azure portalda aldığın geçerli key
+        var apiKey = "APIKEY"; // Azure portalda aldığın geçerli key
         var apiVersion = "2025-04-01-preview";
 
         if (string.IsNullOrWhiteSpace(apiKey))

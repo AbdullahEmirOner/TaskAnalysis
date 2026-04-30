@@ -1,44 +1,68 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using TaskAnalysis.Core.Interfaces;
+﻿using TaskAnalysis.Core.Interfaces;
+
+namespace TaskAnalysis.Service.Services;
 
 public class EmbeddingService : IEmbeddingService
 {
-    private readonly HttpClient _http;
+    private const int VectorSize = 256;
 
-    public EmbeddingService(HttpClient http)
+    public Task<float[]> CreateEmbeddingAsync(string text)
     {
-        _http = http;
-    }
+        var vector = new float[VectorSize];
 
-    public async Task<List<float>> CreateEmbeddingAsync(string text)
-    {
-        var requestBody = new
+        if (string.IsNullOrWhiteSpace(text))
+            return Task.FromResult(vector);
+
+        var words = text
+            .ToLowerInvariant()
+            .Replace(".", " ")
+            .Replace(",", " ")
+            .Replace(";", " ")
+            .Replace(":", " ")
+            .Replace("/", " ")
+            .Replace("\\", " ")
+            .Replace("(", " ")
+            .Replace(")", " ")
+            .Replace("\"", " ")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var word in words)
         {
-            model = "text-embedding-3-small",
-            input = text
-        };
+            var index = Math.Abs(GetStableHash(word)) % VectorSize;
+            vector[index] += 1;
+        }
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/embeddings");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "OPENAI_API_KEY");
+        Normalize(vector);
 
-        request.Content = new StringContent(
-            JsonSerializer.Serialize(requestBody),
-            Encoding.UTF8,
-            "application/json"
-        );
-
-        var response = await _http.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        using var doc = JsonDocument.Parse(json);
-        return doc.RootElement
-            .GetProperty("data")[0]
-            .GetProperty("embedding")
-            .EnumerateArray()
-            .Select(x => x.GetSingle())
-            .ToList();   // <-- ToList() kullan
+        return Task.FromResult(vector);
     }
 
+    private static int GetStableHash(string value)
+    {
+        unchecked
+        {
+            var hash = 23;
+
+            foreach (var c in value)
+                hash = hash * 31 + c;
+
+            return hash;
+        }
+    }
+
+    private static void Normalize(float[] vector)
+    {
+        double sum = 0;
+
+        foreach (var value in vector)
+            sum += value * value;
+
+        var magnitude = Math.Sqrt(sum);
+
+        if (magnitude == 0)
+            return;
+
+        for (int i = 0; i < vector.Length; i++)
+            vector[i] = (float)(vector[i] / magnitude);
+    }
 }
