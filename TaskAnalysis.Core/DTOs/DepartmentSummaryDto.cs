@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace TaskAnalysis.Core.DTOs
 {
-    public record DepartmentSummaryDto // Kod içinde unique yapı sağlamak için aynı yazılmış veriler temizleniyor. AI eğitimine bundan kayaklı sorunlar oluşabilir.
+    // Kod içinde unique yapı sağlamak için aynı yazılmış veriler temizleniyor.
+    // AI eğitimine bundan kayaklı sorunlar oluşabilir.
+    public record DepartmentSummaryDto 
     {
         public string Mudurluk { get; init; } = string.Empty;
         public int KayitSayisi { get; init; }

@@ -197,6 +197,7 @@ namespace TaskAnalysis.DAL.Readers
 
     }
 }
+
 /*AKIŞ
 File (CSV)
    ↓

@@ -45,5 +45,13 @@ app.UseHttpsRedirection();
 app.UseCors("AllowNetlify");
 app.UseAuthorization();
 app.MapControllers();
+
+Task.Run(async () =>
+{
+    using var scope = app.Services.CreateScope();
+    var analysisService = scope.ServiceProvider.GetRequiredService<IAnalysisService>();
+    await analysisService.IndexAllCsvAsync();
+});
+
 app.Run();
 

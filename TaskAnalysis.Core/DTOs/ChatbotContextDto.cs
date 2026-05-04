@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TaskAnalysis.Core.DTOs
 {
-    public record ChatbotContextDto // Kuualımamamkta ilrde kullanıma alınması planlanıyor
+    public record ChatbotContextDto // Kullanımamakta ilerde kullanıma alınması planlanıyor
     {
         public List<DirectorateSummaryDto> DirektorlukOzetleri { get; init; } = new();
     }
