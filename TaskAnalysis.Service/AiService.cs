@@ -110,11 +110,18 @@ public class AiService : IAiService
             .GetProperty("content")
             .GetString() ?? string.Empty;
     }
-
     public AiTaskAnalysisDto ParseTaskAnalysis(string json)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(json))
+                return new AiTaskAnalysisDto();
+
+            json = json
+                .Replace("```json", "")
+                .Replace("```", "")
+                .Trim();
+
             var start = json.IndexOf('{');
             var end = json.LastIndexOf('}');
 
@@ -123,19 +130,52 @@ public class AiService : IAiService
 
             var cleanJson = json.Substring(start, end - start + 1);
 
-            return JsonSerializer.Deserialize<AiTaskAnalysisDto>(
+            var result = JsonSerializer.Deserialize<AiTaskAnalysisDto>(
                 cleanJson,
                 new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
+                });
+
+            if (result == null)
+                return new AiTaskAnalysisDto { Recommendation = json };
+
+            // AI bazen asıl JSON'u recommendation içine gömüyor, bunu yakalıyoruz
+            if (string.IsNullOrWhiteSpace(result.ProjectIdea) &&
+                !string.IsNullOrWhiteSpace(result.Recommendation) &&
+                result.Recommendation.Contains("{") &&
+                result.Recommendation.Contains("projectIdea"))
+            {
+                var innerStart = result.Recommendation.IndexOf('{');
+                var innerEnd = result.Recommendation.LastIndexOf('}');
+
+                if (innerStart != -1 && innerEnd != -1)
+                {
+                    var innerJson = result.Recommendation.Substring(
+                        innerStart,
+                        innerEnd - innerStart + 1
+                    );
+
+                    var innerResult = JsonSerializer.Deserialize<AiTaskAnalysisDto>(
+                        innerJson,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                    if (innerResult != null)
+                        return innerResult;
                 }
-            ) ?? new AiTaskAnalysisDto { Recommendation = json };
+            }
+
+            return result;
         }
         catch
         {
             return new AiTaskAnalysisDto { Recommendation = json };
         }
     }
+
 
     private AiDirectorateDto CreateFallback(string directorateName)
     {

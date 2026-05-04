@@ -128,14 +128,17 @@ public static class AiPromptBuilder
         return sb.ToString();
     }
 
-    public static string BuildDepartmentChunkAnalysisPrompt(string context, string directorate, string? department)
+    public static string BuildDepartmentChunkAnalysisPrompt(
+        string context,
+        string directorate,
+        string? department)
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("You are an AI assistant specializing in corporate task analysis.");
-        sb.AppendLine("Analyze the following task records.");
-        sb.AppendLine("Base your analysis ONLY on the given records.");
-        sb.AppendLine("Answer in Turkish.");
+        sb.AppendLine("You are an assistant specializing in corporate task analysis.");
+        sb.AppendLine("Interpret the following records ONLY as a short analysis summary.");
+        sb.AppendLine("Do not produce JSON. Do not produce project links. Do not use Markdown code blocks.");
+        sb.AppendLine("Write only short bullet points.");
         sb.AppendLine();
 
         sb.AppendLine($"Directorate: {directorate}");
@@ -144,64 +147,69 @@ public static class AiPromptBuilder
             sb.AppendLine($"Department: {department}");
 
         sb.AppendLine();
-        sb.AppendLine("For this chunk, extract the following:");
-        sb.AppendLine("1. Main task themes");
-        sb.AppendLine("2. Repeated responsibilities");
-        sb.AppendLine("3. Tasks that could be improved with automation or AI");
-        sb.AppendLine("4. Possible project ideas");
+        sb.AppendLine("Extract the following briefly:");
+        sb.AppendLine("- Main task themes");
+        sb.AppendLine("- Repeated tasks");
+        sb.AppendLine("- AI/RPA/automation opportunities");
+        sb.AppendLine("- Notable technical/process areas");
         sb.AppendLine();
-        sb.AppendLine("Task records:");
+        sb.AppendLine("Records:");
         sb.AppendLine(context);
 
         return sb.ToString();
     }
-    public static string BuildFinalDepartmentAnalysisWithResponsiblesPrompt(
-       List<string> partialAnalyses,
-       string directorate,
-       string department)
+
+
+    public static string BuildFinalDepartmentAnalysisPrompt(
+     IEnumerable<string> partialAnalyses,
+     string directorate,
+     string? department)
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine($"Directorate: {directorate}");
-        sb.AppendLine($"Department: {department}");
-        sb.AppendLine("Below are partial analyses:");
+        sb.AppendLine("Sen kurumsal AI proje analizi yapan bir asistansın.");
+        sb.AppendLine("Aşağıdaki parça analizlerini tek bir nihai sonuca dönüştür.");
+        sb.AppendLine("Partial analizleri aynen kopyalama.");
+        sb.AppendLine("İç içe JSON yazma.");
+        sb.AppendLine("recommendation alanına JSON koyma.");
+        sb.AppendLine("Markdown, ```json veya açıklama yazma.");
+        sb.AppendLine("SADECE TEK BİR GEÇERLİ JSON NESNESİ DÖN.");
         sb.AppendLine();
 
+        sb.AppendLine($"Direktörlük: {directorate}");
+
+        if (!string.IsNullOrWhiteSpace(department))
+            sb.AppendLine($"Departman: {department}");
+
+        sb.AppendLine();
+        sb.AppendLine("JSON şeması birebir şu olsun:");
+        sb.AppendLine("""
+{
+  "task": "Departmanın/direktörlüğün ana görev özeti",
+  "bestSolution": "AI",
+  "automationRate": 85,
+  "recommendation": "Kısa ve net öneri metni",
+  "projectIdea": "Tek ve somut AI/RPA/otomasyon proje fikri",
+  "similarProjectName": "Benzer gerçek ürün/proje adı",
+  "similarProjectLink": "https://..."
+}
+""");
+
+        sb.AppendLine();
+        sb.AppendLine("Kurallar:");
+        sb.AppendLine("- Tüm alanları dolu üret.");
+        sb.AppendLine("- automationRate 0-100 arasında sayı olsun.");
+        sb.AppendLine("- bestSolution sadece AI, RPA, Hybrid veya Other olsun.");
+        sb.AppendLine("- projectIdea tek proje fikri olsun, liste olmasın.");
+        sb.AppendLine("- similarProjectLink gerçek ürün/proje sayfası gibi görünmeli; bilmiyorsan 'Bulunamadı' yaz.");
+        sb.AppendLine();
+
+        sb.AppendLine("Parça analizleri:");
         foreach (var part in partialAnalyses)
         {
-            sb.AppendLine(part);
             sb.AppendLine("----");
+            sb.AppendLine(part);
         }
-
-        sb.AppendLine();
-        sb.AppendLine("Combine these analyses INTO A SINGLE RESULT.");
-        sb.AppendLine();
-
-        sb.AppendLine("RETURN ONLY JSON.");
-        sb.AppendLine("DO NOT WRITE EXPLANATIONS.");
-        sb.AppendLine("DO NOT WRITE EVEN A SINGLE CHARACTER OUTSIDE JSON.");
-        sb.AppendLine("DO NOT embed JSON inside any field. Each field must contain only its expected value.");
-        sb.AppendLine();
-
-        sb.AppendLine(@"
-{
-  ""task"": ""string"",
-  ""bestSolution"": ""string"",
-  ""automationRate"": 0,
-  ""recommendation"": ""string"",
-  ""projectIdea"": ""string"",
-  ""similarProjectName"": ""string"",
-  ""similarProjectLink"": ""string"",
-  ""responsiblePeople"": [""string""]
-}
-");
-
-        sb.AppendLine();
-        sb.AppendLine("Notes:");
-        sb.AppendLine("- bestSolution must be chosen freely by AI (no restriction).");
-        sb.AppendLine("- responsiblePeople must always be filled with relevant human roles or positions (e.g., 'Embedded Software Engineer', 'Project Manager', 'Systems Engineer').");
-        sb.AppendLine("- recommendation must be plain text only, not JSON.");
-        sb.AppendLine("- Output must be a single JSON object or array of JSON objects, depending on tasks.");
 
         return sb.ToString();
     }

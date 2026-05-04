@@ -105,7 +105,8 @@ public class AnalysisController : ControllerBase
     [HttpGet("ai-analysis/{directorate}")]
     public async Task<IActionResult> GetAiAnalysis(string directorate, string department)
     {
-        var cacheKey = $"ai-analysis-{directorate.ToLower()}-{department.ToLower()}";
+        var cacheKey = $"ai-analysis-v3-{directorate.ToLower()}-{department.ToLower()}";
+
 
         if (_cache.TryGetValue(cacheKey, out var cachedResult))
             return Ok(cachedResult);
@@ -168,7 +169,7 @@ public class AnalysisController : ControllerBase
             }
 
             // Final analiz
-            var finalPrompt = AiPromptBuilder.BuildFinalDepartmentAnalysisPrompt(
+            var finalPrompt = AiPromptBuilder.BuildFinalDepartmentAnalysisWithResponsiblesPrompt(
                 partialAnalyses,
                 directorate,
                 department
