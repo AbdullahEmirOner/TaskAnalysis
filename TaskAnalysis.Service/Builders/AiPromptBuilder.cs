@@ -199,7 +199,7 @@ public static class AiPromptBuilder
         sb.AppendLine("Kurallar:");
         sb.AppendLine("- Tüm alanları dolu üret.");
         sb.AppendLine("- automationRate 0-100 arasında sayı olsun.");
-        sb.AppendLine("- bestSolution sadece AI, RPA, Hybrid veya Other olsun.");
+        sb.AppendLine("- bestSolution sadece AI, RPA veya senin bizze önereceğin bir yapı olsun.");
         sb.AppendLine("- projectIdea tek proje fikri olsun, liste olmasın.");
         sb.AppendLine("- similarProjectLink gerçek ürün/proje sayfası gibi görünmeli; bilmiyorsan 'Bulunamadı' yaz.");
         sb.AppendLine();
