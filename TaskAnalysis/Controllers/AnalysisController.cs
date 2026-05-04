@@ -103,10 +103,14 @@ public class AnalysisController : ControllerBase
     */
 
     [HttpGet("ai-analysis/{directorate}")]
-    public async Task<IActionResult> GetAiAnalysis(string directorate, string department)
+    public async Task<IActionResult> GetAiAnalysis(string directorate, [FromQuery] string? department)
     {
-        var cacheKey = $"ai-analysis-v3-{directorate.ToLower()}-{department.ToLower()}";
+        var safeDirectorate = directorate?.Trim() ?? string.Empty;
+        var safeDepartment = department?.Trim();
 
+        var cacheKey = string.IsNullOrWhiteSpace(safeDepartment)
+            ? $"ai-analysis-v3-{safeDirectorate.ToLower()}"
+            : $"ai-analysis-v3-{safeDirectorate.ToLower()}-{safeDepartment.ToLower()}";
 
         if (_cache.TryGetValue(cacheKey, out var cachedResult))
             return Ok(cachedResult);
@@ -114,34 +118,32 @@ public class AnalysisController : ControllerBase
         try
         {
             var folderPath = _configuration["CsvSettings:FolderPath"];
+
             if (string.IsNullOrWhiteSpace(folderPath))
                 return BadRequest("CSV klasör yolu tanımlı değil.");
 
             var records = _csvReaderService.ReadAllCsv(folderPath);
 
-            // Direktörlük filtresi
             var filtered = records
                 .Where(x => !string.IsNullOrWhiteSpace(x.Birim)
-                    && x.Birim.Equals(directorate, StringComparison.OrdinalIgnoreCase))
+                    && x.Birim.Equals(safeDirectorate, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            // Departman filtresi
-            if (!string.IsNullOrWhiteSpace(department))
+            if (!string.IsNullOrWhiteSpace(safeDepartment))
             {
                 filtered = filtered
                     .Where(x => !string.IsNullOrWhiteSpace(x.Mudurluk)
-                        && x.Mudurluk.Equals(department, StringComparison.OrdinalIgnoreCase))
+                        && x.Mudurluk.Equals(safeDepartment, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
 
             if (!filtered.Any())
-                return NotFound(
-                    string.IsNullOrWhiteSpace(department)
+            {
+                return NotFound(string.IsNullOrWhiteSpace(safeDepartment)
                     ? "Bu direktörlük için veri bulunamadı."
-                    : "Bu departman için veri bulunamadı."
-                );
+                    : "Bu departman için veri bulunamadı.");
+            }
 
-            // Chunk üretimi (20’lik parçalar)
             var chunks = filtered
                 .Select((record, index) => new { record, index })
                 .GroupBy(x => x.index / 20)
@@ -154,40 +156,40 @@ public class AnalysisController : ControllerBase
                 )))
                 .ToList();
 
-            // Parça analizleri
-            var partialAnalyses = new List<string>();
-            foreach (var chunk in chunks)
+            var partialTasks = chunks.Select(chunk =>
             {
                 var chunkPrompt = AiPromptBuilder.BuildDepartmentChunkAnalysisPrompt(
                     chunk,
-                    directorate,
-                    department
+                    safeDirectorate,
+                    safeDepartment
                 );
 
-                var partial = await _aiService.AnalyzeAsync(chunkPrompt);
-                partialAnalyses.Add(partial);
-            }
+                return _aiService.AnalyzeAsync(chunkPrompt);
+            }).ToList();
 
-            // Final analiz
-            var finalPrompt = AiPromptBuilder.BuildFinalDepartmentAnalysisWithResponsiblesPrompt(
+            var partialAnalyses = (await Task.WhenAll(partialTasks)).ToList();
+
+            var finalPrompt = AiPromptBuilder.BuildFinalDepartmentAnalysisPrompt(
                 partialAnalyses,
-                directorate,
-                department
+                safeDirectorate,
+                safeDepartment
             );
 
             var finalAnalysis = await _aiService.AnalyzeAsync(finalPrompt);
+
             var analyzedTask = _aiService.ParseTaskAnalysis(finalAnalysis);
+
             analyzedTask.ResponsiblePeople =
                 _responsiblePersonMatcherService.FindResponsiblePeople(
-                filtered,
-                analyzedTask.ProjectIdea + " " + analyzedTask.Task
-    );
+                    filtered,
+                    $"{analyzedTask.Task} {analyzedTask.ProjectIdea} {analyzedTask.Recommendation} {analyzedTask.BestSolution}",
+                    5
+                );
 
-            // Response
             var result = new
             {
-                directorate,
-                department,
+                directorate = safeDirectorate,
+                department = safeDepartment,
                 recordCount = filtered.Count,
                 chunkCount = chunks.Count,
                 analysis = analyzedTask,
@@ -200,7 +202,6 @@ public class AnalysisController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Hata loglama eklenebilir
             return StatusCode(500, $"AI analizi sırasında hata oluştu: {ex.Message}");
         }
     }
