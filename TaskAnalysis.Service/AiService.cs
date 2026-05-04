@@ -137,7 +137,6 @@ public class AiService : IAiService
         }
     }
 
-
     private AiDirectorateDto CreateFallback(string directorateName)
     {
         return new AiDirectorateDto

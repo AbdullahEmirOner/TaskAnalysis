@@ -21,8 +21,8 @@ Scoped    ?	Her requestte yeni memory
 Transient ?	Her çaðrýda sýfýr
 Singleton ?	Tek memory, her yerde ayný
  */
-builder.Services.AddHttpClient<IAiService, AiService>(); 
-
+builder.Services.AddHttpClient<IAiService, AiService>();
+builder.Services.AddScoped<IResponsiblePersonMatcherService, ResponsiblePersonMatcherService>();
 //builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddCors(options =>
 {

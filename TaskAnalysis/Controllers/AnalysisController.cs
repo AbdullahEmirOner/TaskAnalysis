@@ -10,6 +10,7 @@ namespace TaskAnalysis.API.Controllers;
 [Route("api/[controller]")]
 public class AnalysisController : ControllerBase
 {
+    private readonly IResponsiblePersonMatcherService _responsiblePersonMatcherService;
     private readonly ICsvReaderService _csvReaderService;
     private readonly IAnalysisService _analysisService;
     private readonly IConfiguration _configuration;
@@ -23,13 +24,15 @@ public class AnalysisController : ControllerBase
     IAnalysisService analysisService,
     IConfiguration configuration,
     IAiService aiService,
-    IMemoryCache cache) // IAiMockService aiService
+    IMemoryCache cache,
+    IResponsiblePersonMatcherService responsiblePersonMatcherService) // IAiMockService aiService
     {
         _csvReaderService = csvReaderService;
         _analysisService = analysisService;
         _configuration = configuration;
         _aiService = aiService;
         _cache = cache;
+        _responsiblePersonMatcherService = responsiblePersonMatcherService;
     }
 
     [HttpGet("raw")]
@@ -172,6 +175,12 @@ public class AnalysisController : ControllerBase
             );
 
             var finalAnalysis = await _aiService.AnalyzeAsync(finalPrompt);
+            var analyzedTask = _aiService.ParseTaskAnalysis(finalAnalysis);
+            analyzedTask.ResponsiblePeople =
+                _responsiblePersonMatcherService.FindResponsiblePeople(
+                filtered,
+                analyzedTask.ProjectIdea + " " + analyzedTask.Task
+    );
 
             // Response
             var result = new
@@ -180,7 +189,7 @@ public class AnalysisController : ControllerBase
                 department,
                 recordCount = filtered.Count,
                 chunkCount = chunks.Count,
-                analysis = finalAnalysis,
+                analysis = analyzedTask,
                 fromCache = false
             };
 

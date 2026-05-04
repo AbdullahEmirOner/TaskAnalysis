@@ -155,38 +155,44 @@ public static class AiPromptBuilder
 
         return sb.ToString();
     }
-    public static string BuildFinalDepartmentAnalysisPrompt(List<string> partialAnalyses, string directorate, string? department)
+    public static string BuildFinalDepartmentAnalysisPrompt(
+      List<string> partialAnalyses,
+      string directorate,
+      string department)
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("You are an AI assistant performing high-level corporate analysis.");
-        sb.AppendLine("Below are partial analyses generated for the same directorate/department.");
-        sb.AppendLine("Merge them into a single, consistent, and professional final report.");
-        sb.AppendLine("Combine repeated items.");
-        sb.AppendLine("Answer in Turkish.");
-        sb.AppendLine();
-
         sb.AppendLine($"Directorate: {directorate}");
-
-        if (!string.IsNullOrWhiteSpace(department))
-            sb.AppendLine($"Department: {department}");
-
-        sb.AppendLine();
-        sb.AppendLine("The final report should include the following sections:");
-        sb.AppendLine("1. General Summary");
-        sb.AppendLine("2. Main Task Areas");
-        sb.AppendLine("3. Repeated Tasks");
-        sb.AppendLine("4. AI / Automation Opportunities");
-        sb.AppendLine("5. Suggested Project Ideas");
-        sb.AppendLine("6. Expected Contribution");
+        sb.AppendLine($"Department: {department}");
+        sb.AppendLine("Below are partial analyses:");
         sb.AppendLine();
 
-        sb.AppendLine("Partial analyses:");
-        foreach (var analysis in partialAnalyses)
+        foreach (var part in partialAnalyses)
         {
+            sb.AppendLine(part);
             sb.AppendLine("----");
-            sb.AppendLine(analysis);
         }
+
+        sb.AppendLine();
+        sb.AppendLine("Combine these analyses INTO A SINGLE RESULT.");
+        sb.AppendLine();
+
+        sb.AppendLine("RETURN ONLY JSON.");
+        sb.AppendLine("DO NOT WRITE EXPLANATIONS.");
+        sb.AppendLine("DO NOT WRITE EVEN A SINGLE CHARACTER OUTSIDE JSON.");
+        sb.AppendLine();
+
+        sb.AppendLine(@"
+{
+  ""task"": ""string"",
+  ""bestSolution"": ""AI | RPA | Hybrid | Other"",
+  ""automationRate"": 0,
+  ""recommendation"": ""string"",
+  ""projectIdea"": ""string"",
+  ""similarProjectName"": ""string"",
+  ""similarProjectLink"": ""string""
+}
+");
 
         return sb.ToString();
     }
