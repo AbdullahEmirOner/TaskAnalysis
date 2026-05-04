@@ -155,10 +155,10 @@ public static class AiPromptBuilder
 
         return sb.ToString();
     }
-    public static string BuildFinalDepartmentAnalysisPrompt(
-        List<string> partialAnalyses,
-        string directorate,
-        string department)
+    public static string BuildFinalDepartmentAnalysisWithResponsiblesPrompt(
+       List<string> partialAnalyses,
+       string directorate,
+       string department)
     {
         var sb = new StringBuilder();
 
@@ -180,12 +180,13 @@ public static class AiPromptBuilder
         sb.AppendLine("RETURN ONLY JSON.");
         sb.AppendLine("DO NOT WRITE EXPLANATIONS.");
         sb.AppendLine("DO NOT WRITE EVEN A SINGLE CHARACTER OUTSIDE JSON.");
+        sb.AppendLine("DO NOT embed JSON inside any field. Each field must contain only its expected value.");
         sb.AppendLine();
 
         sb.AppendLine(@"
 {
   ""task"": ""string"",
-  ""bestSolution"": ""string"", 
+  ""bestSolution"": ""string"",
   ""automationRate"": 0,
   ""recommendation"": ""string"",
   ""projectIdea"": ""string"",
@@ -197,10 +198,11 @@ public static class AiPromptBuilder
 
         sb.AppendLine();
         sb.AppendLine("Notes:");
-        sb.AppendLine("- bestSolution must be chosen freely by AI (do not restrict to AI, RPA, Hybrid, Other).");
-        sb.AppendLine("- responsiblePeople must always be filled with relevant roles or positions (e.g., 'Mechanical Engineer', 'Project Manager').");
+        sb.AppendLine("- bestSolution must be chosen freely by AI (no restriction).");
+        sb.AppendLine("- responsiblePeople must always be filled with relevant human roles or positions (e.g., 'Embedded Software Engineer', 'Project Manager', 'Systems Engineer').");
+        sb.AppendLine("- recommendation must be plain text only, not JSON.");
+        sb.AppendLine("- Output must be a single JSON object or array of JSON objects, depending on tasks.");
 
         return sb.ToString();
     }
-
 }
