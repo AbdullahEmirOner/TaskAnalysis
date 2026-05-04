@@ -213,7 +213,6 @@ IsMeaningful → filtreleme
 allRecord → sonuç listesi 
 */
 
-
 /* AKIŞ 
  📂 1. File (CSV)
 Elinde bir CSV dosyası var (örneğin tasks.csv).
