@@ -156,9 +156,9 @@ public static class AiPromptBuilder
         return sb.ToString();
     }
     public static string BuildFinalDepartmentAnalysisPrompt(
-      List<string> partialAnalyses,
-      string directorate,
-      string department)
+        List<string> partialAnalyses,
+        string directorate,
+        string department)
     {
         var sb = new StringBuilder();
 
@@ -185,14 +185,20 @@ public static class AiPromptBuilder
         sb.AppendLine(@"
 {
   ""task"": ""string"",
-  ""bestSolution"": ""AI | RPA | Hybrid | Other"",
+  ""bestSolution"": ""string"", 
   ""automationRate"": 0,
   ""recommendation"": ""string"",
   ""projectIdea"": ""string"",
   ""similarProjectName"": ""string"",
-  ""similarProjectLink"": ""string""
+  ""similarProjectLink"": ""string"",
+  ""responsiblePeople"": [""string""]
 }
 ");
+
+        sb.AppendLine();
+        sb.AppendLine("Notes:");
+        sb.AppendLine("- bestSolution must be chosen freely by AI (do not restrict to AI, RPA, Hybrid, Other).");
+        sb.AppendLine("- responsiblePeople must always be filled with relevant roles or positions (e.g., 'Mechanical Engineer', 'Project Manager').");
 
         return sb.ToString();
     }
