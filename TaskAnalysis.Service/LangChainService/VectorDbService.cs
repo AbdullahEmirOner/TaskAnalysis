@@ -1,6 +1,6 @@
 ﻿using TaskAnalysis.Core.Interfaces;
 
-namespace TaskAnalysis.Service.Services;
+namespace TaskAnalysis.Service.LangChainService;
 
 public class VectorDbService : IVectorDbService
 {

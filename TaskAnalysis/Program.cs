@@ -1,7 +1,7 @@
 using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.DAL.Readers;
-using TaskAnalysis.Service;
-using TaskAnalysis.Service.Services;
+using TaskAnalysis.Service.AIService;
+using TaskAnalysis.Service.LangChainService;
 
 var builder = WebApplication.CreateBuilder(args);
 

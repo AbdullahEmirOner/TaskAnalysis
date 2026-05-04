@@ -6,7 +6,7 @@ using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.Service.Builders;
 
-namespace TaskAnalysis.Service.Services;
+namespace TaskAnalysis.Service.AIService;
 
 public class AnalysisService : IAnalysisService
 {
@@ -411,7 +411,7 @@ public class AnalysisService : IAnalysisService
         var scored = _vectorStore[fileName]
             .Select(v => new
             {
-                Text = v.Text,
+                v.Text,
                 Score = CosineSimilarity(v.Vector, questionEmbedding)
             })
             .OrderByDescending(x => x.Score)

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TaskAnalysis.Core.DTOs
+﻿namespace TaskAnalysis.Core.DTOs
 {
     // Kod içinde unique yapı sağlamak için aynı yazılmış veriler temizleniyor.
     // AI eğitimine bundan kayaklı sorunlar oluşabilir.

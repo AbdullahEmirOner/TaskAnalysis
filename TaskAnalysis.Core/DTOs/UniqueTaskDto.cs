@@ -12,6 +12,7 @@ namespace TaskAnalysis.Core.DTOs
 
         public List<string> Departments { get; set; } = new();
 
+        // Aşağıdakı proplar farklı DTO' ya alınabilir
         public string BestSolution { get; set; } = string.Empty; // AI / RPA / Hybrid / Other
 
         public int AutomationRate { get; set; }

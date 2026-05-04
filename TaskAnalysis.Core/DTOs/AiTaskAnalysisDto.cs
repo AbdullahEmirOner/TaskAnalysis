@@ -10,7 +10,7 @@
         public string SimilarProjectName { get; init; } = string.Empty;
         public string SimilarProjectLink { get; init; } = string.Empty;
 
-        public List<ResponsiblePersonDto> ResponsiblePeople { get; init; } = new();
+        public List<ResponsiblePersonDto> ResponsiblePeople { get; set; } = new();
 
     }
 }
