@@ -129,6 +129,15 @@ public class AnalysisController : ControllerBase
                     && x.Birim.Equals(safeDirectorate, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
+            Console.WriteLine("Kişi dolu kayıt sayısı: " +
+            filtered.Count(x => !string.IsNullOrWhiteSpace(x.ad_soyad)));
+
+            foreach (var item in filtered.Take(5))
+            {
+                Console.WriteLine($"AD: {item.ad_soyad} | Müdürlük: {item.Mudurluk}");
+            }
+
+
             if (!string.IsNullOrWhiteSpace(safeDepartment))
             {
                 filtered = filtered

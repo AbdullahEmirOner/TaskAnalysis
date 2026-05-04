@@ -61,7 +61,7 @@ public class AiService : IAiService
 
           return responseText;
       }*/
-    
+
     public async Task<string> AnalyzeAsync(string prompt)
     {
         var endpoint = "https://openai-web-swe.openai.azure.com/"; // string olarak // Azure portalda Keys and Endpoint kısmında gördüğün URL
@@ -175,7 +175,6 @@ public class AiService : IAiService
             return new AiTaskAnalysisDto { Recommendation = json };
         }
     }
-
 
     private AiDirectorateDto CreateFallback(string directorateName)
     {
