@@ -13,6 +13,6 @@ namespace TaskAnalysis.Core.DTOs
         public List<string> Amaclar { get; init; } = new();
         public List<string> Yetkinlikler { get; init; } = new();
         public List<string> AnaSorumluluklar { get; init; } = new();
-
+        public List<string> AdSoyadlar { get; init; } = new();
     }
 }

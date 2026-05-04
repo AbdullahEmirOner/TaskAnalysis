@@ -61,6 +61,13 @@ public class AnalysisService : IAnalysisService
         .OrderBy(x => x)
         .ToList(),
 
+         AdSoyadlar = mg
+            .Select(x => x.ad_soyad)
+            .Where(IsValidText)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList(),
+
             Yetkinlikler = mg
         .Select(x => x.Yetki)
         .Where(IsValidText)

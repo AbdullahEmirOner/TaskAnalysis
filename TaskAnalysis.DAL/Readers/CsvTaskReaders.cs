@@ -108,6 +108,7 @@ namespace TaskAnalysis.DAL.Readers
                     var record = new TaskRecord
                     {
                         SicilNo = row.SicilNo?.Trim() ?? string.Empty,
+                        ad_soyad = row.ad_soyad?.Trim() ?? string.Empty,
                         Birim = direktorluk,
                         Mudurluk = row.Mudurluk?.Trim() ?? string.Empty,
                         Amac = row.Amac?.Trim() ?? string.Empty,
@@ -176,6 +177,7 @@ namespace TaskAnalysis.DAL.Readers
                 var record = new TaskRecord
                 {
                     SicilNo = row.SicilNo?.Trim() ?? string.Empty,
+                    ad_soyad = row.ad_soyad?.Trim() ?? string.Empty,
                     Birim = direktorluk,
                     Mudurluk = row.Mudurluk?.Trim() ?? string.Empty,
                     Amac = row.Amac?.Trim() ?? string.Empty,
