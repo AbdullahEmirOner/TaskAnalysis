@@ -125,7 +125,9 @@ public class AnalysisService : IAnalysisService
        }*/
 
     public string BuildChatbotContext(List<DirectorateSummaryDto> summaries)
-    {
+    { /* BuildChatbotContext senin LLM’e vereceğin context stringini hazırlıyor.
+       Bu sayede model, şirket görev analizini yaparken düzgün bir formatta veri görüyor.
+       */
         if (summaries == null || summaries.Count == 0)
             return "Analiz edilecek veri bulunamadı.";
 
@@ -168,7 +170,10 @@ public class AnalysisService : IAnalysisService
     }
 
     public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries)
-    {
+    { /* BuildUniqueTask
+       Şirket görev özetlerinden (DirectorateSummaryDto) çıkarılan benzersiz görevleri (UniqueTaskDto) üretmeni sağlıyor.
+       Yani aynı sorumluluk farklı müdürlüklerde geçse bile tek bir görev olarak listeleniyor
+      */
         if (summaries == null || summaries.Count == 0)
             return new List<UniqueTaskDto>();
 
@@ -196,8 +201,10 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
-    public List<TaskRecord> GetRelevantRecords(List<TaskRecord> records, string question, int maxCount = 50)
-    {
+    public List<TaskRecord> GetRelevantRecords(List<TaskRecord> records, string question, int maxCount = 50) // SearchAsync / SearchAllAsync  mantıksal benzerlik var düzeltilmeli
+    { /* Elindeki TaskRecord listesi içinden bir soruya en uygun kayıtları seçiyor.
+        Yani “keyword‑bazlı filtreleme ve sıralama” yapıyor
+       */
         if (records == null || records.Count == 0)
             return new List<TaskRecord>();
 
@@ -293,11 +300,11 @@ public class AnalysisService : IAnalysisService
         {
             var safeFileName = Path.GetFileName(request.FileName);
 
-            chunks = await _vectorDb.SearchAsync(safeFileName, queryEmbedding, 5);
+            chunks = await _vectorDb.SearchAsync(safeFileName, queryEmbedding, 3);
         }
         else
         {
-            chunks = await _vectorDb.SearchAllAsync(queryEmbedding, 5);
+            chunks = await _vectorDb.SearchAllAsync(queryEmbedding, 3);
         }
 
         if (chunks == null || chunks.Count == 0)

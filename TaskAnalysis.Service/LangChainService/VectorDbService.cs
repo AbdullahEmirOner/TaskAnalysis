@@ -1,4 +1,5 @@
-﻿using TaskAnalysis.Core.Interfaces;
+﻿using TaskAnalysis.Core.DTOs;
+using TaskAnalysis.Core.Interfaces;
 
 namespace TaskAnalysis.Service.LangChainService;
 
@@ -25,32 +26,47 @@ Sonuç: En yakın vektörler bulunarak benzer içerikler listelenir.
 */
 public class VectorDbService : IVectorDbService
 {                    
-    private readonly Dictionary<string, List<VectorItem>> _store = new();
+    private readonly Dictionary<string, List<VectorItemDto>> _store = new();
 
     public Task InsertAsync(string fileName, string text, float[] embedding)
     {
         var safeFileName = Path.GetFileName(fileName);
 
         if (!_store.ContainsKey(safeFileName))
-            _store[safeFileName] = new List<VectorItem>();
+            _store[safeFileName] = new List<VectorItemDto>();
 
-        _store[safeFileName].Add(new VectorItem
+        _store[safeFileName].Add(new VectorItemDto
         {
             Text = text,
             Embedding = embedding
         });
 
         return Task.CompletedTask;
+        /* Bu fonksiyon bir dosya adı altında embedding kayıtlarını saklıyor.
+
+         Her çağrıldığında: "fileName" → "text" + "embedding" eşleşmesini _store içine ekliyor.
+         
+         _store aslında senin küçük bir vektör veritabanın.
+         */
     }
 
     public Task<List<string>> SearchAsync(string fileName, float[] embedding, int limit = 3)
+    // InsertAsync ile embedding kaydediyorsun,
+    // SearchAsync ile de “bu embedding’e en yakın cümleleri” buluyorsun. Bu, semantic search pipeline’ının kalbi.
     {
-        var safeFileName = Path.GetFileName(fileName);
-
-        if (!_store.ContainsKey(safeFileName))
+        if (string.IsNullOrWhiteSpace(fileName))
             return Task.FromResult(new List<string>());
 
-        var results = _store[safeFileName]
+        var safeFileName = Path.GetFileName(fileName);
+
+        // Case-insensitive eşleştirme
+        var key = _store.Keys
+            .FirstOrDefault(k => string.Equals(k, safeFileName, StringComparison.OrdinalIgnoreCase));
+
+        if (key == null)
+            return Task.FromResult(new List<string>());
+
+        var results = _store[key]
             .Select(x => new
             {
                 x.Text,
@@ -63,42 +79,7 @@ public class VectorDbService : IVectorDbService
 
         return Task.FromResult(results);
     }
-
-    public bool IsIndexed(string fileName)
-    {
-        var safeFileName = Path.GetFileName(fileName);
-
-        return _store.ContainsKey(safeFileName)
-               && _store[safeFileName].Count > 0;
-    }
-
-    public void Clear(string fileName)
-    {
-        var safeFileName = Path.GetFileName(fileName);
-
-        if (_store.ContainsKey(safeFileName))
-            _store.Remove(safeFileName);
-    }
-
-    private static double CosineSimilarity(float[] v1, float[] v2)
-    {
-        var length = Math.Min(v1.Length, v2.Length);
-
-        double dot = 0;
-        double mag1 = 0;
-        double mag2 = 0;
-
-        for (int i = 0; i < length; i++)
-        {
-            dot += v1[i] * v2[i];
-            mag1 += v1[i] * v1[i];
-            mag2 += v2[i] * v2[i];
-        }
-
-        return dot / (Math.Sqrt(mag1) * Math.Sqrt(mag2) + 1e-8);
-    }
-
-    public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 5)
+    public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 5) // Tüm dosyalarda kayıtlı embedding’ler arasında arama yapıyor.
     {
         var allItems = _store
             .SelectMany(file => file.Value.Select(item => new
@@ -115,12 +96,56 @@ public class VectorDbService : IVectorDbService
         return Task.FromResult(allItems);
     }
 
-    private class VectorItem
-    {
-        public string Text { get; set; } = string.Empty;
+    public bool IsIndexed(string fileName)
+    { /* IsIndexed = “Bu dosya için embedding eklenmiş mi?” kontrolü.
 
-        public float[] Embedding { get; set; } = Array.Empty<float>();
+       true → dosya adı _store içinde var ve en az bir embedding kayıtlı.
+       
+       false → hiç eklenmemiş veya liste boş.
+       
+       👉 Yani bu fonksiyon, senin sisteminde bir dosyanın indexlenip indexlenmediğini anlamak için kullanılıyor.
+       */
+        var safeFileName = Path.GetFileName(fileName);
+
+        return _store.ContainsKey(safeFileName)
+               && _store[safeFileName].Count > 0;
     }
+
+    public void Clear(string fileName)
+    {
+        var safeFileName = Path.GetFileName(fileName);
+
+        if (_store.ContainsKey(safeFileName))
+            _store.Remove(safeFileName);
+    }
+
+    private static double CosineSimilarity(float[] v1, float[] v2)
+    { /* Bu fonksiyon iki vektör arasındaki cosine similarity değerini döndürüyor.
+
+       Sonuç 0 ile 1 arasında:
+       
+       1 → tamamen aynı yön (çok benzer)
+       
+       0 → tamamen farklı yön (benzerlik yok)
+       
+       Normalize edilmiş vektörlerde bu hesaplama daha doğru çalışıyor.
+       */
+        var length = Math.Min(v1.Length, v2.Length);
+
+        double dot = 0;
+        double mag1 = 0;
+        double mag2 = 0;
+
+        for (int i = 0; i < length; i++)
+        {
+            dot += v1[i] * v2[i];
+            mag1 += v1[i] * v1[i];
+            mag2 += v2[i] * v2[i];
+        }
+
+        return dot / (Math.Sqrt(mag1) * Math.Sqrt(mag2) + 1e-8);
+    }
+
     public int GetTotalItemCount()
     {
         return _store.Sum(x => x.Value.Count);
