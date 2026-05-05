@@ -121,87 +121,93 @@ public class AiService : IAiService
             .GetProperty("content")
             .GetString() ?? string.Empty;
     }
-/* 🧩 Fonksiyon Akış Şeması
-Konfigürasyon Değerleri Alınıyor
+    /* 🧩 Fonksiyon Akış Şeması --> Task<string> AnalyzeAsync(string prompt)
+    - Konfigürasyon Değerleri Alınıyor
 
-endpoint → Azure OpenAI URL’si
+    endpoint → Azure OpenAI URL’si
 
-deploymentName → Modelin Azure’daki deployment adı
+    deploymentName → Modelin Azure’daki deployment adı
 
-apiKey → Azure portalından alınan key
+    apiKey → Azure portalından alınan key
 
-apiVersion → Kullanılacak API sürümü
+    apiVersion → Kullanılacak API sürümü
 
-API Key Kontrolü
+    API Key Kontrolü
 
-Eğer apiKey boşsa → Exception fırlatılır: "Azure OpenAI API key yok."
+    Eğer apiKey boşsa → Exception fırlatılır: "Azure OpenAI API key yok."
 
-Request URL Hazırlanıyor
+    Request URL Hazırlanıyor
 
-Format:
+    Format:
 
-Code
-{endpoint}openai/deployments/{deploymentName}/chat/completions?api-version={apiVersion}
-HTTP Header Ayarı
+    Code
+    {endpoint}openai/deployments/{deploymentName}/chat/completions?api-version={apiVersion}
+    HTTP Header Ayarı
 
-DefaultRequestHeaders.Clear() → Önceki header’lar temizlenir
+    DefaultRequestHeaders.Clear() → Önceki header’lar temizlenir
 
-DefaultRequestHeaders.Add("api-key", apiKey) → Kimlik doğrulama için API key eklenir
+    DefaultRequestHeaders.Add("api-key", apiKey) → Kimlik doğrulama için API key eklenir
 
-Request Body Hazırlanıyor
+    Request Body Hazırlanıyor
 
-messages → Kullanıcı prompt’u (role = "user")
+    messages → Kullanıcı prompt’u (role = "user")
 
-temperature = 0.2 → Daha deterministik cevap için
+    temperature = 0.2 → Daha deterministik cevap için
 
-Body JSON’a Çevriliyor
+    Body JSON’a Çevriliyor
 
-JsonSerializer.Serialize(requestBody)
+    JsonSerializer.Serialize(requestBody)
 
-HTTP POST İsteği Gönderiliyor
+    HTTP POST İsteği Gönderiliyor
 
-PostAsync(requestUrl, content)
+    PostAsync(requestUrl, content)
 
-Response Alınıyor
+    Response Alınıyor
 
-response.Content.ReadAsStringAsync() → JSON string olarak yanıt
+    response.Content.ReadAsStringAsync() → JSON string olarak yanıt
 
-Başarısızlık Kontrolü
+    Başarısızlık Kontrolü
 
-Eğer response.IsSuccessStatusCode == false → Exception fırlatılır (status code + hata mesajı)
+    Eğer response.IsSuccessStatusCode == false → Exception fırlatılır (status code + hata mesajı)
 
-Yanıt Parse Ediliyor
+    Yanıt Parse Ediliyor
 
-JsonDocument.Parse(responseText)
+    JsonDocument.Parse(responseText)
 
-choices[0].message.content → Modelin ürettiği cevap alınır
+    choices[0].message.content → Modelin ürettiği cevap alınır
 
-Sonuç Döndürülüyor
+    Sonuç Döndürülüyor
 
-Fonksiyon, modelin cevabını string olarak geri döner
-*/
-/* 🔗 Özet Şema (Basitleştirilmiş)
-Code
-[Config Values] 
-      ↓
-[API Key Check] → Exception (boşsa)
-      ↓
-[Build Request URL]
-      ↓
-[Set Headers (api-key)]
-      ↓
-[Create Request Body]
-      ↓
-[POST Request to Azure]
-      ↓
-[Check Response Status]
-      ↓
-[Parse JSON Response]
-      ↓
-[Return Model Answer]
-     */
-    public AiTaskAnalysisDto ParseTaskAnalysis(string json)
+    Fonksiyon, modelin cevabını string olarak geri döner
+    */
+    /* 🔗 Özet Şema (Basitleştirilmiş)
+    Code
+    [Config Values] 
+          ↓
+    [API Key Check] → Exception (boşsa)
+          ↓
+    [Build Request URL]
+          ↓
+    [Set Headers (api-key)]
+          ↓
+    [Create Request Body]
+          ↓
+    [POST Request to Azure]
+          ↓
+    [Check Response Status]
+          ↓
+    [Parse JSON Response]
+          ↓
+    [Return Model Answer]
+         */
+
+    public AiTaskAnalysisDto ParseTaskAnalysis(string json) // Parse etmek --> Bir veriyi belirli kurallara göre çözümlemek ve anlamlı parçalara ayırmak.
     {
+        /* ParseTaskAnalysis(string json)
+          AI’den dönen cevabı AiTaskAnalysisDto nesnesine dönüştürmeye çalışır.
+          Eğer JSON formatında değilse veya beklenmedik bir yapıda ise, Recommendation alanına ham metni koyarak geri döner. --> Promt kısmında text olarak alınarak bu sorun çözülür ama 
+          orada da parse işlemi yapmak gerekiyor
+        */
         try
         {
             if (string.IsNullOrWhiteSpace(json))
@@ -218,15 +224,16 @@ Code
             if (start == -1 || end == -1)
                 return new AiTaskAnalysisDto { Recommendation = json };
 
-            var cleanJson = json.Substring(start, end - start + 1);
+            var cleanJson = json.Substring(start, end - start + 1); // AI bazen cevabın başına/sonuna açıklama eklediği için, gelen string içinde JSON dışında metin olabilir.
+            // Bu satır, ham string içinden sadece geçerli JSON parçasını ayıklıyor.
 
             var result = JsonSerializer.Deserialize<AiTaskAnalysisDto>(
                 cleanJson,
                 new JsonSerializerOptions
                 {
-                    PropertyNameCaseInsensitive = true
+                    PropertyNameCaseInsensitive = true // JSON’daki property isimleri büyük/küçük harf duyarlı olmadan eşleşiyor.
                 });
-
+            
             if (result == null)
                 return new AiTaskAnalysisDto { Recommendation = json };
 
@@ -241,6 +248,9 @@ Code
 
                 if (innerStart != -1 && innerEnd != -1)
                 {
+                    /* Substring(innerStart, innerEnd - innerStart + 1) → Bu iki index arasındaki kısmı alır. 
+                     Yani Recommendation içine gömülmüş JSON’un sadece { ... } parçasını çıkarır.
+                    */
                     var innerJson = result.Recommendation.Substring(
                         innerStart,
                         innerEnd - innerStart + 1
@@ -257,7 +267,6 @@ Code
                         return innerResult;
                 }
             }
-
             return result;
         }
         catch
@@ -266,12 +275,12 @@ Code
         }
     }
 
-   /*private AiDirectorateDto CreateFallback(string directorateName)
+   private AiDirectorateDto CreateFallback(string directorateName)
     {
         return new AiDirectorateDto
         {
             Directorate = directorateName,
             Departments = new List<AiDepartmentDto>()
         };
-    }*/
+    }
 }

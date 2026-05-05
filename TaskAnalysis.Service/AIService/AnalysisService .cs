@@ -281,7 +281,6 @@ public class AnalysisService : IAnalysisService
         };
     }
 
-
     public async Task<string> AskQuestionAsync(ChatbotQuestionDto request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question))
@@ -313,7 +312,6 @@ public class AnalysisService : IAnalysisService
 
         return aiResponse;
     }
-
 
     private static bool IsValidText(string? value)
     {
