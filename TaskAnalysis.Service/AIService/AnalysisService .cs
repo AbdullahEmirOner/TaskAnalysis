@@ -124,7 +124,6 @@ public class AnalysisService : IAnalysisService
            };
        }*/
 
-
     public string BuildChatbotContext(List<DirectorateSummaryDto> summaries)
     {
         if (summaries == null || summaries.Count == 0)
@@ -325,7 +324,6 @@ public class AnalysisService : IAnalysisService
         ).ToList();
     }
     //   SicilNo;Birim;Mudurluk;Amac;Yetki;AnaSorumluluk
-
     public async Task<object> IndexCsvAsync(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
