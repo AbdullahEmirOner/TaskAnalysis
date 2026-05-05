@@ -2,8 +2,29 @@
 
 namespace TaskAnalysis.Service.LangChainService;
 
+/* Vector DB (vektör veritabanı), yapay zekâ ve makine öğrenimi uygulamalarında kullanılan özel bir veritabanı türüdür. 
+   Normal veritabanları satır–sütun yapısında çalışırken, Vector DB verileri yüksek boyutlu matematiksel vektörler olarak saklar ve bu vektörler arasında hızlı benzerlik araması yapar.
+
+📌 Vector DB’nin Temel Özellikleri
+Vektör Gömmeleri (Embeddings): Metin, görsel, ses veya video gibi veriler, anlamlarını temsil eden sayısal vektörlere dönüştürülür.
+
+Benzerlik Araması: Bir sorgu vektörüne en yakın diğer vektörleri bulur (ör. “Ali topu attı” ile “Ali topu Abdullah’a attı” benzerliğini yakalar).
+
+Yüksek Boyutlu Veri Yönetimi: Binlerce boyutlu vektörleri depolamak ve sorgulamak için optimize edilmiştir.
+
+Performans: k‑NN (k‑en yakın komşu), HNSW (Hierarchical Navigable Small World) ve IVF (Inverted File Index) gibi algoritmalarla hızlı arama sağlar.
+
+⚙️ Nasıl Çalışır?
+Veri Dönüşümü: Makine öğrenmesi modelleri, ham veriyi (ör. bir cümle veya görsel) embedding vektörüne dönüştürür.
+
+Depolama: Bu vektörler veritabanına kaydedilir.
+
+Arama: Kullanıcı bir sorgu yaptığında, sistem vektörler arasındaki mesafeyi (cosine similarity, Öklidyen mesafe) hesaplar.
+
+Sonuç: En yakın vektörler bulunarak benzer içerikler listelenir. 
+*/
 public class VectorDbService : IVectorDbService
-{
+{                    
     private readonly Dictionary<string, List<VectorItem>> _store = new();
 
     public Task InsertAsync(string fileName, string text, float[] embedding)

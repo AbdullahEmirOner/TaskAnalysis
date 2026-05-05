@@ -2,7 +2,7 @@
 
 namespace TaskAnalysis.Service.LangChainService;
 
-public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya veriyi sayısal vektörlere dönüştürme işlemidir.
+public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya veriyi sayısal vektörlere dönüştürme işlemidir. Amaç token problemi yaşamadan metinleri karşılaştırmak ve benzerlik ölçmek.
 { 
     private const int VectorSize = 256; // Her metin 256 sayıyla temsil ediliyor.
 
@@ -71,8 +71,20 @@ public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya v
         }
     }
 
-    private static void Normalize(float[] vector)
-    {
+    private static void Normalize(float[] vector) // Uzun metinler ve kısa metinleri karşılaştırabilmek yani vektörün uzunluğunu 1 yapmak için var. 
+    { /*Normalize işleminin matematiksel dayanağı aslında vektör normu ve cosine similarity(iki vektörün benzerliği ölçmek için ama biz direkt llm'e veriyoruz) kavramlarına dayanıyor. 
+        Normalize işlemi → vektörün uzunluğunu 1 yaparak farklı uzunluktaki metinleri karşılaştırmayı kolaylaştırır.
+        Vektörün uzunluğu (magnitude) → √(x1² + x2² + ... + xn²)
+        Normalize edilmiş vektör → her bileşen / magnitude
+        Bu sayede kısa ve uzun metinler arasındaki benzerlik daha adil şekilde ölçülebilir.
+
+        Neden Yapıyoruz?
+Uzun metinlerde daha çok kelime olur → vektörde daha çok “1” birikir → vektörün uzunluğu büyür.
+
+Kısa metinlerde daha az kelime olur → vektörün uzunluğu küçük kalır.
+
+Eğer normalize etmezsen, uzun metinler hep daha “büyük” görünür ve benzerlik karşılaştırması bozulur.
+        */
         double sum = 0;
 
         foreach (var value in vector)
@@ -87,3 +99,25 @@ public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya v
             vector[i] = (float)(vector[i] / magnitude);
     }
 }
+/* AKIŞ
+Class her cümle için çalışıyor.
+
+Cümledeki her kelimeyi alıyor.
+
+Her kelimenin her harfini tek tek işleyerek hash üretiyor.
+
+Hash sonucu → 256 uzunluğundaki dizide tek bir indeks.
+
+Aynı kelime her zaman aynı indekse düşüyor → deterministik.
+
+Tüm kelimeler işlendiğinde elimizde 256 boyutlu float[] oluyor.
+
+Normalize işlemiyle bu vektörün uzunluğu 1 yapılıyor → değerler 0–1 aralığına çekiliyor.
+
+Bu vektör artık cümlenin sayısal temsili.
+
+Sen bu vektörü LLM’e veriyorsun → LLM bu sayısal temsili kullanarak yorum yapıyor veya benzerlik karşılaştırması yapıyor.
+
+📌 Yani senin sistemin:
+Metin → Kelimeler → Hash → 256 boyutlu vektör → Normalize → LLM’e context olarak gönderme.
+ */

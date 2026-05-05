@@ -1,0 +1,255 @@
+﻿LangChain’in resmi bir .NET kütüphanesi var ve ASP.NET Web API projelerinde NuGet üzerinden doğrudan kullanılabiliyor.
+Bu paket sayesinde prompt chaining, memory, RAG (retrieval‑augmented generation) ve vector database entegrasyonlarını C# içinde rahatlıkla kurabilirsin.
+
+🔑 LangChain .NET NuGet Paket adı: LangChain
+
+Son sürüm: 0.17.1 (2025 itibarıyla güncel)
+
+Desteklenen frameworkler:
+
+.NET 8.0 ve üzeri
+
+.NET Standard 2.0
+
+.NET Framework 4.6.2
+
+Kurulum:
+
+bash
+dotnet add package LangChain --version 0.17.1
+veya Visual Studio Package Manager Console:
+
+powershell
+Install-Package LangChain -Version 0.17.1
+⚙️ ASP.NET Web API’de Kullanım
+LangChain .NET paketini ASP.NET Core Web API projesine eklediğinde şu özellikleri kullanabilirsin:
+
+LLM entegrasyonu: OpenAI veya Azure OpenAI modellerini provider üzerinden bağlayabilirsin.
+
+Embedding modelleri: TextEmbeddingV3SmallModel gibi hazır sınıflar var.
+
+Vector DB entegrasyonu: SQLite, Pinecone, Weaviate gibi veritabanlarıyla çalışabiliyor.
+
+Prompt chaining: Birden fazla prompt’u bağlayarak daha karmaşık iş akışları kurabilirsin.
+
+RAG desteği: Dokümanlardan embedding çıkarıp semantik arama yapabilir, sonuçları LLM’e context olarak verebilirsin.
+
+
+Özellik	     |       LangChain .NET	                        |    Semantic Kernel
+----------------------------------------------------------------------------------------------------
+Amaç	     |       Prompt chaining, agent yapıları		|    Microsoft tabanlı AI orkestrasyonu
+----------------------------------------------------------------------------------------------------
+Vector DB	 |       Dahili destek (SQLite, Pinecone vb.)	|    Harici entegrasyon gerekiyor
+----------------------------------------------------------------------------------------------------
+Esneklik	 |       Açık kaynak, genişletilebilir			|    Microsoft ekosistemine bağlı
+----------------------------------------------------------------------------------------------------
+RAG	         |       Dahili destek		       				|    Ekstra implementasyon gerekiyor
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RAG = Retrieval Augmented Generation
+
+Yani:
+
+Bilgi getir + o bilgiyle cevap üret
+
+Normal LLM sadece kendi bildiğine göre cevap verir.
+
+Ama RAG’de sistem önce dış kaynaktan bilgi arar:
+
+PDF / Word / CSV / veri tabanı / doküman / web sayfası
+
+Sonra bulduğu bilgiyi LLM’e verir.
+
+Örnek:
+
+Soru: Ali topu kime attı?
+Dokümanda geçen bilgi: Ali topu Abdullah’a atmıştır.
+Cevap: Ali topu Abdullah’a attı.
+
+RAG’in ana mantığı budur:
+
+1. Kullanıcı soru sorar
+2. Soru embedding’e çevrilir
+3. Vector DB’de benzer doküman aranır
+4. Bulunan dokümanlar context olarak LLM’e verilir
+5. LLM bu bilgiye göre cevap üretir
+
+Yani RAG’in iki ana parçası var:
+
+Retrieval = Bilgiyi bulma
+Augmented Generation = Bulunan bilgiyle cevap üretme
+
+Sonra LangChain nedir?
+
+LangChain, bu adımları birbirine bağlayan araçtır.
+
+Yani LangChain tek başına RAG değildir.
+
+LangChain şunu yapar:
+
+Soru geldi
+→ embedding oluştur
+→ vector DB’de ara
+→ gelen dokümanları prompt içine koy
+→ LLM’e gönder
+→ cevabı kullanıcıya döndür
+
+Yani LangChain burada orkestra şefi gibidir.
+
+RAG bir yöntemdir.
+
+LangChain ise bu yöntemi kodda kurmamızı kolaylaştıran framework’tür.
+
+En düzgün anlatım sırası
+1. Input
+Kullanıcı soru sorar.
+
+2. LangChain Orchestration
+LangChain süreci yönetir:
+Soru → embedding → vector DB araması → context → LLM
+
+3. RAG - Retrieval
+Soruya benzeyen dokümanlar vector DB’den bulunur.
+
+4. RAG - Augmented Generation
+Bulunan dokümanlar LLM’e verilir ve cevap üretilir.
+
+5. Memory
+Varsa önceki konuşma bilgileri de dikkate alınır.
+
+6. Output
+Son cevap kullanıcıya gösterilir.
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Kullanıcı Soru → Prompt Chain → Embedding → Vector DB Arama → Context → LLM → Cevap
+
+Bunu parçalayıp RAG nerede + sistemin rolü ne tek tek gösteriyorum:
+
+🔴 1. RAG BU AKIŞIN NERESİ?
+
+RAG = Embedding + Vector DB + Context + LLM (kısmen)
+
+Daha net:
+
+Embedding → Vector DB Arama → Context → LLM
+✔ RAG’in parçaları:
+1. Embedding
+
+Soru sayıya çevrilir
+
+"Ali topu kime attı?" → [0.123, 0.98, ...]
+2. Vector DB Arama (Retrieval kısmı)
+
+En benzer doküman bulunur
+
+"Ali topu Abdullah’a attı" ← en yakın sonuç
+
+👉 BURASI = Retrieval (RAG’in ilk yarısı)
+
+3. Context
+
+Bulunan bilgi LLM’e verilir
+
+Context: Ali topu Abdullah’a attı
+4. LLM
+
+LLM bu bilgiyle cevap üretir
+
+👉 BURASI = Augmented Generation (RAG’in ikinci yarısı)
+
+🔥 Özet:
+RAG = Retrieval + Augmented Generation
+
+Retrieval → Embedding + Vector DB
+Generation → Context + LLM
+🔵 2. BU YAPI NE? (LangChain / Sistem)
+Kullanıcı Soru → Prompt Chain → ... → Cevap
+
+Bu komple yapı:
+
+👉 Orchestration (LangChain işi)
+
+Yani:
+
+"Ne zaman ne çalışacak?"ı yöneten sistem
+
+LangChain burada:
+
+embedding’i çağırır
+vector DB’yi çağırır
+sonucu alır
+prompt’a koyar
+LLM’e gönderir
+
+👉 Yani:
+
+LangChain = bu pipeline’ı yöneten beyin
+RAG = pipeline’ın içindeki teknik yöntem
+🟡 3. Prompt Chain ne?
+Prompt Chain = adımların zincirlenmesi
+
+Örnek:
+
+Soru al
+→ temizle
+→ embedding yap
+→ DB ara
+→ context hazırla
+→ LLM’e gönder
+
+👉 Yani bu = workflow
+
+🟢 4. Memory (hafıza) nasıl sağlanıyor?
+
+Memory RAG değildir. Ayrı bir şey.
+
+2 yöntem var:
+🔹 1. Conversation Memory (kısa hafıza)
+
+Önceki mesajlar tutulur:
+
+User: Ali topu kime attı?
+Assistant: Abdullah’a attı.
+
+User: Peki sonra ne oldu?
+
+Sistem şunu yapar:
+
+Context'e eski konuşmayı ekler
+
+👉 Teknik olarak:
+
+LangChain memory objesi tutar
+her istekte prompt’a ekler
+🔹 2. Vector Memory (uzun hafıza)
+
+Konuşmalar embedding’e çevrilir ve DB’ye atılır
+
+Sonra tekrar aranır
+
+👉 Bu aslında:
+
+Memory = RAG gibi çalışır
+🔥 SON NET AYRIM
+Kullanıcı Soru
+↓
+Prompt Chain  → (LangChain / orchestration)
+↓
+Embedding     → (RAG başlıyor)
+↓
+Vector DB     → (Retrieval)
+↓
+Context       → (RAG)
+↓
+LLM           → (Augmented Generation)
+↓
+Cevap
+⚡ TEK CÜMLE
+
+👉 RAG = bilgi bul + o bilgiyle cevap üret
+👉 LangChain = bu süreci adım adım çalıştıran sistem
+👉 Memory = geçmiş konuşmaları sisteme tekrar dahil etme mekanizması
