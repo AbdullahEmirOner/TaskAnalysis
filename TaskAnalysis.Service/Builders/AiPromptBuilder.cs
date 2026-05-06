@@ -211,7 +211,7 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         sb.AppendLine("- bestSolution sadece AI, RPA veya senin bizze önereceğin bir yapı olsun.");
         sb.AppendLine("- projectIdeaalanı JSON array olmalı.");
         sb.AppendLine("- Tam olarak 5 proje üret");
-        sb.AppendLine("- Her proje projeIdea, similarProjectName ve similarProjectLink alanına saahip olmalı.");
+        sb.AppendLine("- Her proje hangi görev için önerdiysen burası önemli döküman içinde geçen görevin adıyla ver Task, projectIdea, similarProjectName ve similarProjectLink alanına sahip olmalı.");
         sb.AppendLine("- similarProjectLink gerçek ürün/proje sayfası gibi görünmeli; bilmiyorsan 'Bulunamadı' yaz.");
         sb.AppendLine();
 

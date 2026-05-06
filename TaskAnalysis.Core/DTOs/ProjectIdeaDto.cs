@@ -8,6 +8,7 @@ namespace TaskAnalysis.Core.DTOs
 {
     public class ProjectIdeaDto
     {
+        public string Task { get; init; } = string.Empty;
         public string ProjectIdea { get; init; } = string.Empty;
         public string SimilarProjectName { get; init; } = string.Empty;
         public string SimilarProjectLink { get; init; } = string.Empty;
