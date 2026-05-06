@@ -15,7 +15,8 @@ public class AnalysisController : ControllerBase
     private readonly IAnalysisService _analysisService;
     private readonly IConfiguration _configuration;
     private readonly IMemoryCache _cache;
-    private readonly IAiService _aiService;
+    private readonly IRetrievalService _retrieval;
+    private readonly IAiService _aiService; 
 
     //  private readonly IAiService _aiService;
 
@@ -277,17 +278,16 @@ public class AnalysisController : ControllerBase
     [HttpPost("index-csv")]
     public async Task<IActionResult> IndexCsv([FromQuery] string fileName)
     {
-        var result = await _analysisService.IndexCsvAsync(fileName);
+        var result = await _retrieval.IndexCsvAsync(fileName);
         return Ok(result);
     }
 
     [HttpPost("index-all-csv")]
     public async Task<IActionResult> IndexAllCsv()
     {
-        var result = await _analysisService.IndexAllCsvAsync();
+        var result = await _retrieval.IndexAllCsvAsync();
         return Ok(result);
     }
-
 
 }
 
