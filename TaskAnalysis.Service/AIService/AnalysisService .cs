@@ -275,7 +275,4 @@ public class AnalysisService : IAnalysisService
 
         return aiResponse;
     }
-
-
-
 }

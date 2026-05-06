@@ -71,11 +71,11 @@ public class AnalysisController : ControllerBase
         if (string.IsNullOrWhiteSpace(folderPath))
             return BadRequest("CSV klasör yolu tanımlı değil.");
 
-     /*   var records = _csvReaderService.ReadAllCsv(folderPath);
+        var records = _csvReaderService.ReadAllCsv(folderPath);
         var summaries = _analysisService.BuildDirectoraterSummaries(records);
-        var chatbotContext = _analysisService.BuildChatbotContext(summaries);*/
+        var chatbotContext = _analysisService.BuildChatbotContext(summaries);
 
-        return Ok();
+        return Ok(chatbotContext);
     }
 
     /*    [HttpGet("ai-mock-analysis")]

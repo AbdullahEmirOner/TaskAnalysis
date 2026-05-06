@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TaskAnalysis.Core\OTOKAR.TaskAnalysis.Core.csproj" />
+    <ProjectReference Include="..\TaskAnalysis.Core\TaskAnalysis.Core.csproj" />
   </ItemGroup>
 
 </Project>

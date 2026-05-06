@@ -4,7 +4,7 @@ using System.Globalization;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
 
-namespace TaskAnalysis.DAL.Readers
+namespace OTOKAR.TaskAnalysis.DAL.Readers
 {
     public class CsvTaskReaders : ICsvReaderService
     {
