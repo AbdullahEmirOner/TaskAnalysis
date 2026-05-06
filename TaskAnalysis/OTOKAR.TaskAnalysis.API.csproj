@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TaskAnalysis.Core\TaskAnalysis.Core.csproj" />
-    <ProjectReference Include="..\TaskAnalysis.DAL\TaskAnalysis.DAL.csproj" />
-    <ProjectReference Include="..\TaskAnalysis.Service\TaskAnalysis.Service.csproj" />
+    <ProjectReference Include="..\TaskAnalysis.Core\OTOKAR.TaskAnalysis.Core.csproj" />
+    <ProjectReference Include="..\TaskAnalysis.DAL\OTOKAR.TaskAnalysis.DAL.csproj" />
+    <ProjectReference Include="..\TaskAnalysis.Service\OTOKAR.TaskAnalysis.Service.csproj" />
   </ItemGroup>
 
 </Project>

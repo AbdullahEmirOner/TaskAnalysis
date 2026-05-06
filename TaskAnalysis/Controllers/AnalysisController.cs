@@ -18,14 +18,13 @@ public class AnalysisController : ControllerBase
     private readonly IRetrievalService _retrieval;
     private readonly IAiService _aiService; 
 
-    //  private readonly IAiService _aiService;
-
     public AnalysisController(
     ICsvReaderService csvReaderService,
     IAnalysisService analysisService,
     IConfiguration configuration,
     IAiService aiService,
     IMemoryCache cache,
+    IRetrievalService retrieval,
     IResponsiblePersonMatcherService responsiblePersonMatcherService) // IAiMockService aiService
     {
         _csvReaderService = csvReaderService;
@@ -34,6 +33,7 @@ public class AnalysisController : ControllerBase
         _aiService = aiService;
         _cache = cache;
         _responsiblePersonMatcherService = responsiblePersonMatcherService;
+        _retrieval = retrieval;
     }
 
     [HttpGet("raw")]
@@ -71,11 +71,11 @@ public class AnalysisController : ControllerBase
         if (string.IsNullOrWhiteSpace(folderPath))
             return BadRequest("CSV klasör yolu tanımlı değil.");
 
-        var records = _csvReaderService.ReadAllCsv(folderPath);
+     /*   var records = _csvReaderService.ReadAllCsv(folderPath);
         var summaries = _analysisService.BuildDirectoraterSummaries(records);
-        var chatbotContext = _analysisService.BuildChatbotContext(summaries);
+        var chatbotContext = _analysisService.BuildChatbotContext(summaries);*/
 
-        return Ok(chatbotContext);
+        return Ok();
     }
 
     /*    [HttpGet("ai-mock-analysis")]

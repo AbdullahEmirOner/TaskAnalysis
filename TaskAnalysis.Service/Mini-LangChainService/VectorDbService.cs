@@ -26,7 +26,9 @@ Sonuç: En yakın vektörler bulunarak benzer içerikler listelenir.
 */
 public class VectorDbService : IVectorDbService
 {                    
-    private readonly Dictionary<string, List<VectorItemDto>> _store = new(); // _store → dosya adı → embedding listesi şeklinde çalışan bir in‑memory index.
+    private readonly Dictionary<string, List<VectorItemDto>> _store = new(); // _store → dosya adı → embedding listesi şeklinde çalışan bir in‑memory index. 
+    // Vector DB2 ye geçiş yapacağız -->PINECONE, yapay zekâ uygulamalarında kullanılan bir vektör veritabanı hizmetidir.
+    // Büyük ölçekli vektör verilerini depolamak, yönetmek ve sorgulamak için optimize edilmiştir. Pinecone, özellikle makine öğrenmesi modelleri tarafından
 
     public Task InsertAsync(string fileName, string text, float[] embedding)
     {
