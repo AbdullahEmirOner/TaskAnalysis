@@ -20,7 +20,8 @@ namespace TaskAnalysis.Service.Mini_LangChainService
         private readonly IConfiguration _configuration;
         private readonly IVectorDbService _vectorDb;
 
-        public RetrievalService(IVectorDbService vectorDbService, IEmbeddingService embeddingService, ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
+        public RetrievalService(IVectorDbService vectorDbService, IEmbeddingService embeddingService,
+            ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
         {
             _csvReaderService = csvReaderService;
             _aiService = aiService;

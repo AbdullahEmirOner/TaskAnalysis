@@ -19,7 +19,8 @@ public class AnalysisService : IAnalysisService
     private readonly IRetrievalService _retrieval;
     private readonly IVectorDbService _vectorDb; 
 
-    public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService, ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
+    public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService,
+        ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
     {
         _csvReaderService = csvReaderService;
         _aiService = aiService;
@@ -148,6 +149,7 @@ public class AnalysisService : IAnalysisService
             foreach (var department in directorate.Mudurlukler)
             {
                 sb.AppendLine($"Müdürlük: {department.Mudurluk}");
+           
                 sb.AppendLine($"Kayıt Sayısı: {department.KayitSayisi}");
 
                 sb.AppendLine("Amaçlar:");
@@ -171,6 +173,7 @@ public class AnalysisService : IAnalysisService
         return sb.ToString();
     }
 
+    
     public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries)
     { /* BuildUniqueTask
        Şirket görev özetlerinden (DirectorateSummaryDto) çıkarılan benzersiz görevleri (UniqueTaskDto) üretmeni sağlıyor.
