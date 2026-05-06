@@ -238,8 +238,7 @@ public class AiService : IAiService
                 return new AiTaskAnalysisDto { Recommendation = json };
 
             // AI bazen asıl JSON'u recommendation içine gömüyor, bunu yakalıyoruz
-            if (string.IsNullOrWhiteSpace(result.ProjectIdea) &&
-                !string.IsNullOrWhiteSpace(result.Recommendation) &&
+            if (!string.IsNullOrWhiteSpace(result.Recommendation) &&
                 result.Recommendation.Contains("{") &&
                 result.Recommendation.Contains("projectIdea"))
             {

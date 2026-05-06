@@ -1,5 +1,5 @@
 ﻿using TaskAnalysis.Core.Interfaces;
-using TaskAnalysis.DAL.Readers;
+using OTOKAR.TaskAnalysis.DAL.Readers;
 using TaskAnalysis.Service.AIService;
 using TaskAnalysis.Service.Helpers;
 using TaskAnalysis.Service.LangChainService;

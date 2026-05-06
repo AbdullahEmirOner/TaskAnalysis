@@ -6,9 +6,8 @@
         public string BestSolution { get; init; } = string.Empty;
         public int AutomationRate { get; init; }
         public string Recommendation { get; init; } = string.Empty;
-        public string ProjectIdea { get; init; } = string.Empty;
-        public string SimilarProjectName { get; init; } = string.Empty;
-        public string SimilarProjectLink { get; init; } = string.Empty;
+
+        public List<ProjectIdeaDto> ProjectIdea { get; set; } = new();
 
         public List<ResponsiblePersonDto> ResponsiblePeople { get; set; } = new();
 
