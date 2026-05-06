@@ -3,7 +3,7 @@ using TaskAnalysis.Core.DTOs;
 
 namespace TaskAnalysis.Service.Builders;
 
-public static class AiPromptBuilder
+public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtlar var düzeltilmeli 06.05.2026  
 {
     public static string BuildNormalizeTasksPrompt(List<UniqueTaskDto> tasks)
     {
@@ -172,10 +172,7 @@ public static class AiPromptBuilder
        Yani bir “analiz raporu” senaryosu.
     */
     
-    public static string BuildFinalDepartmentAnalysisPrompt(
-     IEnumerable<string> partialAnalyses,
-     string directorate,
-     string? department)
+    public static string BuildFinalDepartmentAnalysisPrompt( IEnumerable<string> partialAnalyses, string directorate, string? department)
     {
         var sb = new StringBuilder();
 
@@ -212,7 +209,9 @@ public static class AiPromptBuilder
         sb.AppendLine("- Tüm alanları dolu üret.");
         sb.AppendLine("- automationRate 0-100 arasında sayı olsun.");
         sb.AppendLine("- bestSolution sadece AI, RPA veya senin bizze önereceğin bir yapı olsun.");
-        sb.AppendLine("- projectIdea 5 tane proje fikri olsun, liste olmasın.");
+        sb.AppendLine("- projectIdeaalanı JSON array olmalı.");
+        sb.AppendLine("- Tam olarak 5 proje üret");
+        sb.AppendLine("- Her proje projeIdea, similarProjectName ve similarProjectLink alanına saahip olmalı.");
         sb.AppendLine("- similarProjectLink gerçek ürün/proje sayfası gibi görünmeli; bilmiyorsan 'Bulunamadı' yaz.");
         sb.AppendLine();
 
