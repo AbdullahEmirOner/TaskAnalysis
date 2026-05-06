@@ -26,12 +26,12 @@ Sonuç: En yakın vektörler bulunarak benzer içerikler listelenir.
 */
 public class VectorDbService : IVectorDbService
 {                    
-    private readonly Dictionary<string, List<VectorItemDto>> _store = new();
+    private readonly Dictionary<string, List<VectorItemDto>> _store = new(); // _store → dosya adı → embedding listesi şeklinde çalışan bir in‑memory index.
 
     public Task InsertAsync(string fileName, string text, float[] embedding)
     {
         var safeFileName = Path.GetFileName(fileName);
-
+        
         if (!_store.ContainsKey(safeFileName))
             _store[safeFileName] = new List<VectorItemDto>();
 
@@ -79,6 +79,7 @@ public class VectorDbService : IVectorDbService
 
         return Task.FromResult(results);
     }
+
     public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 5) // Tüm dosyalarda kayıtlı embedding’ler arasında arama yapıyor.
     {
         var allItems = _store
@@ -111,7 +112,7 @@ public class VectorDbService : IVectorDbService
                && _store[safeFileName].Count > 0;
     }
 
-    public void Clear(string fileName)
+    public void Clear(string fileName) // Çokta gerek yok aslında zaten sabit csv kullanıyoruz tekrar tekrar indexlemeye gerek yok.
     {
         var safeFileName = Path.GetFileName(fileName);
 
@@ -119,7 +120,7 @@ public class VectorDbService : IVectorDbService
             _store.Remove(safeFileName);
     }
 
-    private static double CosineSimilarity(float[] v1, float[] v2)
+    public double CosineSimilarity(float[] v1, float[] v2)
     { /* Bu fonksiyon iki vektör arasındaki cosine similarity değerini döndürüyor.
 
        Sonuç 0 ile 1 arasında:

@@ -13,5 +13,6 @@ public interface IVectorDbService
 
     Task<List<string>> SearchAllAsync(float[] embedding, int limit = 5);
     void Clear(string fileName);
+    public double CosineSimilarity(float[] v1, float[] v2);
 }
 

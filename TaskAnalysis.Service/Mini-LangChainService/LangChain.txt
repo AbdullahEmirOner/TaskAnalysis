@@ -253,3 +253,29 @@ Cevap
 👉 RAG = bilgi bul + o bilgiyle cevap üret
 👉 LangChain = bu süreci adım adım çalıştıran sistem
 👉 Memory = geçmiş konuşmaları sisteme tekrar dahil etme mekanizması
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Senin Kod Yapısı								Görevi																						LangChain’deki Karşılığı
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+EmbeddingService							|	Metni 256 boyutlu vektöre çeviriyor (CreateEmbeddingAsync)								|	Embeddings (ör. OpenAIEmbeddings, HuggingFaceEmbeddings)
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+VectorDbService								|	In‑memory vector store (InsertAsync, SearchAsync, SearchAllAsync, Clear)				|	VectorStore (ör. FAISS, Pinecone, Weaviate)
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+CosineSimilarity							|	İki embedding arasındaki benzerliği hesaplıyor											|	SimilarityMetric (LangChain’de default cosine similarity)
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+IndexCsvAsync / IndexAllCsvAsync			|	CSV dosyalarını okuyup chunk’lara bölüyor, embedding üretiyor ve vector store’a ekliyor	|	DocumentLoader + TextSplitter + VectorStore.add_documents
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+CreateChunks								|	TaskRecord listesini chunk’lara ayırıyor												|	TextSplitter (ör. RecursiveCharacterTextSplitter)
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+RetrieveRelevantChunks						|	Soru embedding’i ile en yakın chunk’ları buluyor										|	Retriever.get_relevant_documents
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+AskQuestionAsync							|	Soru → embedding → retrieval → prompt → LLM cevabı										|	RetrievalQA chain
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+BuildChatbotContext							|	DirectorateSummaryDto listesinden LLM için context string hazırlıyor					|	PromptTemplate + LLMChain
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+AiPromptBuilder.BuildChatbotPrompt			|	Context + soru → prompt oluşturuyor														|	PromptTemplate (LangChain’de prompt engineering)
+--------------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------
+AnalysisService								|	Tüm iş akışını birleştiren orchestrator													|	Chain veya Agent (LangChain’de pipeline yönetimi)

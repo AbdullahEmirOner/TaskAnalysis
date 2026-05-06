@@ -1,10 +1,16 @@
 ﻿using TaskAnalysis.Core.Interfaces;
-
-namespace TaskAnalysis.Service.LangChainService;
+using TaskAnalysis.Service.Helpers;
+//namespace TaskAnalysis.Service.LangChainService;
 
 public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya veriyi sayısal vektörlere dönüştürme işlemidir. Amaç token problemi yaşamadan metinleri karşılaştırmak ve benzerlik ölçmek.
 { 
     private const int VectorSize = 256; // Her metin 256 sayıyla temsil ediliyor.
+    private readonly IEmbeddingHelperService _helper;
+
+    public EmbeddingService(IEmbeddingHelperService helper)
+    {
+        _helper = helper;
+    }
 
     public Task<float[]> CreateEmbeddingAsync(string text)
     {
@@ -44,59 +50,13 @@ public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya v
          */
         foreach (var word in words)
         {
-            var index = Math.Abs(GetStableHash(word)) % VectorSize;
+            var index = Math.Abs(_helper.GetStableHash(word)) % VectorSize;
             vector[index] += 1;
         }
 
-        Normalize(vector);
+        _helper.Normalize(vector);
 
         return Task.FromResult(vector);
-    }
-
-    private static int GetStableHash(string value)
-    {
-        unchecked
-        /* unchecked
-         C#’ta integer taşması (overflow) normalde hata üretir.
-
-         unchecked → taşma olursa hata verme, sayıyı olduğu gibi devam ettir.
-         */
-        {
-            var hash = 23;
-
-            foreach (var c in value)
-                hash = hash * 31 + c;
-
-            return hash;
-        }
-    }
-
-    private static void Normalize(float[] vector) // Uzun metinler ve kısa metinleri karşılaştırabilmek yani vektörün uzunluğunu 1 yapmak için var. 
-    { /*Normalize işleminin matematiksel dayanağı aslında vektör normu ve cosine similarity(iki vektörün benzerliği ölçmek için ama biz direkt llm'e veriyoruz) kavramlarına dayanıyor. 
-        Normalize işlemi → vektörün uzunluğunu 1 yaparak farklı uzunluktaki metinleri karşılaştırmayı kolaylaştırır.
-        Vektörün uzunluğu (magnitude) → √(x1² + x2² + ... + xn²)
-        Normalize edilmiş vektör → her bileşen / magnitude
-        Bu sayede kısa ve uzun metinler arasındaki benzerlik daha adil şekilde ölçülebilir.
-
-        Neden Yapıyoruz?
-Uzun metinlerde daha çok kelime olur → vektörde daha çok “1” birikir → vektörün uzunluğu büyür.
-
-Kısa metinlerde daha az kelime olur → vektörün uzunluğu küçük kalır.
-
-Eğer normalize etmezsen, uzun metinler hep daha “büyük” görünür ve benzerlik karşılaştırması bozulur.
-        */
-        double sum = 0;
-
-        foreach (var value in vector)
-            sum += value * value;
-
-        var magnitude = Math.Sqrt(sum);
-
-        if (magnitude == 0)
-            return;
-
-        for (int i = 0; i < vector.Length; i++)
-            vector[i] = (float)(vector[i] / magnitude);
     }
 }
 /* AKIŞ
