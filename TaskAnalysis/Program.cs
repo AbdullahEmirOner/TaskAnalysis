@@ -1,5 +1,6 @@
 using TaskAnalysis.API.Extesions;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.DAL.DbContext;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.ConfigureSqlContext(builder.Configuration);
 builder.Services.AddCsvTaskReaders();
 builder.Services.AddRetrievalService();
 builder.Services.AddEmbeddingService();
@@ -16,8 +18,9 @@ builder.Services.AddAnalysisService();
 builder.Services.AddVectorDbService();
 builder.Services.AddAiService();
 builder.Services.AddResponsiblePersonMatcherService();
-builder.Services.AddPolicy();   
-
+builder.Services.AddPolicy();
+builder.Services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<TaskAnalysisDbContext>());
 builder.Services.AddMemoryCache();
 var app = builder.Build();
 

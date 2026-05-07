@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using System.Text;
+using System.Text.Json;
 using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
@@ -17,10 +19,11 @@ public class AnalysisService : IAnalysisService
     private readonly IMemoryCache _cache;
     private readonly IConfiguration _configuration;
     private readonly IRetrievalService _retrieval;
-    private readonly IVectorDbService _vectorDb; 
+    private readonly IVectorDbService _vectorDb;
+    private readonly IApplicationDbContext _context;
 
     public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService,
-        ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache)
+        ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context)
     {
         _csvReaderService = csvReaderService;
         _aiService = aiService;
@@ -29,6 +32,7 @@ public class AnalysisService : IAnalysisService
         _embeddingService = embeddingService;
         _vectorDb = vectorDbService;
         _retrieval= retrieval;
+        _context =context;
     }
    
     public List<DirectorateSummaryDto> BuildDirectoraterSummaries(List<TaskRecord> records)
@@ -173,6 +177,7 @@ public class AnalysisService : IAnalysisService
         return sb.ToString();
     }
 
+  
     
     public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries)
     { /* BuildUniqueTask
@@ -284,6 +289,28 @@ public class AnalysisService : IAnalysisService
         if (string.IsNullOrWhiteSpace(sicilNo))
             throw new ArgumentException("Sicil numarası boş olamaz.");
 
+        sicilNo = sicilNo.Trim();
+
+        var existingDbResult = await _context.PersonAiAnalysisResults
+            .FirstOrDefaultAsync(x => x.SicilNo == sicilNo);
+
+        if (existingDbResult != null)
+        {
+            var cachedPersonResult = JsonSerializer.Deserialize<PersonAiAnalysisDto>(
+                existingDbResult.ResultJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            if (cachedPersonResult == null)
+                return new PersonAiAnalysisDto();
+
+            cachedPersonResult.FromCache = true;
+
+            return cachedPersonResult;
+        }
+
         var folderPath = _configuration["CsvSettings:FolderPath"];
 
         if (string.IsNullOrWhiteSpace(folderPath))
@@ -300,7 +327,8 @@ public class AnalysisService : IAnalysisService
             return new PersonAiAnalysisDto
             {
                 SicilNo = sicilNo,
-                GeneralComment = "Bu sicil numarasına ait görev kaydı bulunamadı."
+                GeneralComment = "Bu sicil numarasına ait görev kaydı bulunamadı.",
+                FromCache = false
             };
         }
 
@@ -361,11 +389,23 @@ public class AnalysisService : IAnalysisService
         result.Mudurluk = mudurluk;
         result.TotalTaskCount = personRecords.Count;
 
-        if (result.TaskAnalyses.Any())
+        if (result.TaskAnalyses != null && result.TaskAnalyses.Any())
         {
             result.AverageAiAutomationRate = Convert.ToInt32(
                 result.TaskAnalyses.Average(x => x.AiAutomationRate));
         }
+
+        result.FromCache = false;
+
+        var entity = new PersonAiAnalysisResult
+        {
+            SicilNo = sicilNo,
+            ResultJson = JsonSerializer.Serialize(result),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.PersonAiAnalysisResults.Add(entity);
+        await _context.SaveChangesAsync();
 
         return result;
     }

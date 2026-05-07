@@ -4,11 +4,18 @@ using TaskAnalysis.Service.AIService;
 using TaskAnalysis.Service.Helpers;
 using TaskAnalysis.Service.LangChainService;
 using TaskAnalysis.Service.Mini_LangChainService;
+using TaskAnalysis.DAL.DbContext;
+using Microsoft.EntityFrameworkCore;
 
 namespace TaskAnalysis.API.Extesions
 {
     public static class Extensions
     {
+        public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddDbContext<TaskAnalysisDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("sqlConnection")));
+            //ASP.NET Core otomatik olarak Scoped lifetime ile kaydediyor.
+        }
         public static void AddCsvTaskReaders(this IServiceCollection services) =>
     services.AddScoped<ICsvReaderService, CsvTaskReaders>();
 

@@ -19,5 +19,7 @@ namespace TaskAnalysis.Core.DTOs
         public string GeneralComment { get; set; } = string.Empty;
 
         public List<PersonTaskAiAnalysisDto> TaskAnalyses { get; set; } = new();
+
+        public bool FromCache { get; set; }
     }
 }
