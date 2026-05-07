@@ -8,7 +8,8 @@ using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.Service.Builders;
 
 namespace TaskAnalysis.API.Controllers;
-
+//------------------------------------------------- CRUD işlemleri maalesef burada oluyor refactoring yapılmalı (Katmanlar iç içe girmiş durumda) ------------------------------------------------------------------------
+//--------------------------------------------- Direktorlükler için service katmanında yeni fonksiyon yazılmalı !!! ve service katmanı da parçalnmalı ----------------------------------------------------------
 [ApiController]
 [Route("api/[controller]")]
 public class AnalysisController : ControllerBase
@@ -84,30 +85,6 @@ public class AnalysisController : ControllerBase
         return Ok(chatbotContext);
     }
 
-    /*    [HttpGet("ai-mock-analysis")]
-        public IActionResult GetAiAnalysis()
-        {
-            var folderPath = _configuration["CsvSettings:FolderPath"];
-
-            if (string.IsNullOrWhiteSpace(folderPath))
-                return BadRequest("CSV klasör yolu tanımlı değil.");
-
-            var records = _csvReaderService.ReadAllCsv(folderPath);
-            var summaries = _analysisService.BuildDirectoraterSummaries(records);
-
-            if (summaries.Count == 0)
-                return BadRequest("Analiz edilecek veri bulunamadı.");
-
-            var prompt = AiPromptBuilder.BuildDirectoratePrompt(summaries[0]);
-            var aiResult = _aiService.Analyze(prompt);
-
-            return Ok(new
-            {
-                Prompt = prompt,
-                AiResult = aiResult
-            });
-        }
-    */
 
     [HttpGet("ai-analysis/{directorate}")]
     public async Task<IActionResult> GetAiAnalysis(string directorate, [FromQuery] string? department)
@@ -275,9 +252,8 @@ public class AnalysisController : ControllerBase
         }
     }
 
-
     [HttpGet("ai-unique-tasks")]
-        public async Task<IActionResult> GetAiUniqueTasks()
+    public async Task<IActionResult> GetAiUniqueTasks()
         {
             var cacheKey = $"ai-unique-tasks"; // Validation Model olarak düzeltielecek kod tekrarı azaltılacak
 
@@ -321,8 +297,8 @@ public class AnalysisController : ControllerBase
             }
         }
 
-        [HttpPost("chatbot-ask")]
-        public async Task<IActionResult> Ask([FromBody] ChatbotQuestionDto request)
+    [HttpPost("chatbot-ask")]
+    public async Task<IActionResult> Ask([FromBody] ChatbotQuestionDto request)
         {
             try
             {
@@ -335,27 +311,52 @@ public class AnalysisController : ControllerBase
             }
         }
 
-        [HttpPost("index-csv")]
-        public async Task<IActionResult> IndexCsv([FromQuery] string fileName)
+    [HttpPost("index-csv")]
+    public async Task<IActionResult> IndexCsv([FromQuery] string fileName)
         {
             var result = await _retrieval.IndexCsvAsync(fileName);
             return Ok(result);
         }
 
-        [HttpPost("index-all-csv")]
-        public async Task<IActionResult> IndexAllCsv()
+    [HttpPost("index-all-csv")]
+    public async Task<IActionResult> IndexAllCsv()
         {
             var result = await _retrieval.IndexAllCsvAsync();
             return Ok(result);
         }
 
-        [HttpGet("person/{sicilNo}/ai-analysis")]
-        public async Task<IActionResult> AnalyzePersonBySicilNo(string sicilNo)
+    [HttpGet("person/{sicilNo}/ai-analysis")]
+    public async Task<IActionResult> AnalyzePersonBySicilNo(string sicilNo)
         {
             var result = await _analysisService.AnalyzePersonBySicilNoAsync(sicilNo);
 
             return Ok(result);
         }
+
+    /*    [HttpGet("ai-mock-analysis")]
+        public IActionResult GetAiAnalysis()
+        {
+            var folderPath = _configuration["CsvSettings:FolderPath"];
+
+            if (string.IsNullOrWhiteSpace(folderPath))
+                return BadRequest("CSV klasör yolu tanımlı değil.");
+
+            var records = _csvReaderService.ReadAllCsv(folderPath);
+            var summaries = _analysisService.BuildDirectoraterSummaries(records);
+
+            if (summaries.Count == 0)
+                return BadRequest("Analiz edilecek veri bulunamadı.");
+
+            var prompt = AiPromptBuilder.BuildDirectoratePrompt(summaries[0]);
+            var aiResult = _aiService.Analyze(prompt);
+
+            return Ok(new
+            {
+                Prompt = prompt,
+                AiResult = aiResult
+            });
+        }
+    */
 
 } 
 
