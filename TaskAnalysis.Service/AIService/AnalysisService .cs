@@ -278,4 +278,96 @@ public class AnalysisService : IAnalysisService
 
         return aiResponse;
     }
+
+    public async Task<PersonAiAnalysisDto> AnalyzePersonBySicilNoAsync(string sicilNo)
+    {
+        if (string.IsNullOrWhiteSpace(sicilNo))
+            throw new ArgumentException("Sicil numarası boş olamaz.");
+
+        var folderPath = _configuration["CsvSettings:FolderPath"];
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            throw new Exception("CsvSettings:FolderPath appsettings.json içinde bulunamadı.");
+
+        var allRecords = _csvReaderService.ReadAllCsv(folderPath);
+
+        var personRecords = allRecords
+            .Where(x => x.SicilNo == sicilNo)
+            .ToList();
+
+        if (!personRecords.Any())
+        {
+            return new PersonAiAnalysisDto
+            {
+                SicilNo = sicilNo,
+                GeneralComment = "Bu sicil numarasına ait görev kaydı bulunamadı."
+            };
+        }
+
+        var firstRecord = personRecords.First();
+
+        var fullName = firstRecord.ad_soyad;
+        var birim = firstRecord.Birim;
+        var mudurluk = firstRecord.Mudurluk;
+
+        var personContextChunks = personRecords
+            .Select(x =>
+                $"SicilNo: {x.SicilNo}\n" +
+                $"Ad Soyad: {x.ad_soyad}\n" +
+                $"Birim: {x.Birim}\n" +
+                $"Müdürlük: {x.Mudurluk}\n" +
+                $"Amaç: {x.Amac}\n" +
+                $"Yetki: {x.Yetki}\n" +
+                $"Ana Sorumluluk: {x.AnaSorumluluk}")
+            .ToList();
+
+        var analysisQuestion =
+            "Bu çalışanın görevlerinin AI ile yapılabilirlik oranını analiz et. " +
+            "Her görev için AI otomasyon yüzdesi, çözüm tipi, öneri ve proje fikri üret.";
+
+        var questionEmbedding = await _embeddingService.CreateEmbeddingAsync(analysisQuestion);
+
+        var scoredChunks = new List<(string Text, double Score)>();
+
+        foreach (var chunk in personContextChunks)
+        {
+            var chunkEmbedding = await _embeddingService.CreateEmbeddingAsync(chunk);
+
+            var score = _vectorDb.CosineSimilarity(questionEmbedding, chunkEmbedding);
+
+            scoredChunks.Add((chunk, score));
+        }
+
+        var relevantChunks = scoredChunks
+            .OrderByDescending(x => x.Score)
+            .Take(8)
+            .Select(x => x.Text)
+            .ToList();
+
+        var prompt = AiPromptBuilder.BuildPersonAiAnalysisPrompt(
+            sicilNo,
+            fullName,
+            birim,
+            mudurluk,
+            relevantChunks);
+
+        var aiResponse = await _aiService.AnalyzeAsync(prompt);
+
+        var result = _aiService.ParsePersonAiAnalysis(aiResponse);
+
+        result.SicilNo = sicilNo;
+        result.FullName = fullName;
+        result.Birim = birim;
+        result.Mudurluk = mudurluk;
+        result.TotalTaskCount = personRecords.Count;
+
+        if (result.TaskAnalyses.Any())
+        {
+            result.AverageAiAutomationRate = Convert.ToInt32(
+                result.TaskAnalyses.Average(x => x.AiAutomationRate));
+        }
+
+        return result;
+    }
+
 }

@@ -289,5 +289,13 @@ public class AnalysisController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("person/{sicilNo}/ai-analysis")]
+    public async Task<IActionResult> AnalyzePersonBySicilNo(string sicilNo)
+    {
+        var result = await _analysisService.AnalyzePersonBySicilNoAsync(sicilNo);
+
+        return Ok(result);
+    }
+
 }
 

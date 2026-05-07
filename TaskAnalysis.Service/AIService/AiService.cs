@@ -274,4 +274,31 @@ public class AiService : IAiService
         }
     }
 
+    public PersonAiAnalysisDto ParsePersonAiAnalysis(string json)
+    {
+        try
+        {
+            var cleanJson = json
+                .Replace("```json", "")
+                .Replace("```", "")
+                .Trim();
+
+            var result = JsonSerializer.Deserialize<PersonAiAnalysisDto>(
+                cleanJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            return result ?? new PersonAiAnalysisDto();
+        }
+        catch
+        {
+            return new PersonAiAnalysisDto
+            {
+                GeneralComment = "AI cevabı JSON formatında parse edilemedi."
+            };
+        }
+    }
+
 }

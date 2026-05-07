@@ -224,6 +224,71 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
 
         return sb.ToString();
     }
+
+    public static string BuildPersonAiAnalysisPrompt( string sicilNo, string fullName, string birim, string mudurluk, List<string> relevantChunks)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("Sen kurumsal süreçleri analiz eden bir yapay zeka dönüşüm danışmanısın.");
+        sb.AppendLine("Aşağıda bir çalışana ait görev kayıtları verilmiştir.");
+        sb.AppendLine();
+        sb.AppendLine("Amacın:");
+        sb.AppendLine("1. Her görev için AI ile yapılabilirlik yüzdesi üretmek.");
+        sb.AppendLine("2. Her görev için en uygun çözüm tipini belirlemek.");
+        sb.AppendLine("3. Her görev için kısa öneri yazmak.");
+        sb.AppendLine("4. Her görev için uygulanabilir proje fikri üretmek.");
+        sb.AppendLine("5. Kişinin toplam işlerinin yüzde kaçının AI ile desteklenebileceğini hesaplamak.");
+        sb.AppendLine();
+        sb.AppendLine("Kurallar:");
+        sb.AppendLine("- Sadece JSON döndür.");
+        sb.AppendLine("- JSON dışında açıklama yazma.");
+        sb.AppendLine("- AiAutomationRate ve AverageAiAutomationRate 0 ile 100 arasında integer olmalı.");
+        sb.AppendLine("- BestSolution değerleri şunlardan biri olabilir: AI, RPA, AI + RPA, Dashboard, Manuel, Hibrit.");
+        sb.AppendLine("- Emin değilsen düşük değil makul oran ver.");
+        sb.AppendLine("- Görevleri mümkün olduğunca ayrı ayrı analiz et.");
+        sb.AppendLine();
+        sb.AppendLine("Çalışan Bilgileri:");
+        sb.AppendLine($"SicilNo: {sicilNo}");
+        sb.AppendLine($"Ad Soyad: {fullName}");
+        sb.AppendLine($"Birim: {birim}");
+        sb.AppendLine($"Müdürlük: {mudurluk}");
+        sb.AppendLine();
+        sb.AppendLine("Görev Kayıtları:");
+        sb.AppendLine("```");
+
+        foreach (var chunk in relevantChunks)
+        {
+            sb.AppendLine(chunk);
+            sb.AppendLine("---");
+        }
+
+        sb.AppendLine("```");
+        sb.AppendLine();
+        sb.AppendLine("Aşağıdaki JSON formatına birebir uygun cevap ver:");
+        sb.AppendLine("""
+{
+  "sicilNo": "string",
+  "fullName": "string",
+  "birim": "string",
+  "mudurluk": "string",
+  "totalTaskCount": 0,
+  "averageAiAutomationRate": 0,
+  "generalComment": "string",
+  "taskAnalyses": [
+    {
+      "task": "string",
+      "aiAutomationRate": 0,
+      "bestSolution": "string",
+      "recommendation": "string",
+      "projectIdea": "string"
+    }
+  ]
+}
+""");
+
+        return sb.ToString();
+    }
+
 }
 /*Normalize → Unique → Chunk → Final → Chatbot  
  
