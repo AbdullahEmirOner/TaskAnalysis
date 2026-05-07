@@ -76,6 +76,10 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         sb.AppendLine("Use English JSON keys exactly as specified.");
 
         sb.AppendLine();
+        sb.AppendLine("Return ONLY valid JSON.");
+        sb.AppendLine("No text outside JSON.");
+        sb.AppendLine("No blank lines.");
+        sb.AppendLine("Use this exact JSON structure and keys.");
         sb.AppendLine("Use this exact JSON structure:");
         sb.AppendLine(@"
                         [
@@ -148,6 +152,8 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         sb.AppendLine("Interpret the following records ONLY as a short analysis summary.");
         sb.AppendLine("Do not produce JSON. Do not produce project links. Do not use Markdown code blocks.");
         sb.AppendLine("Write only short bullet points.");
+        sb.AppendLine("Recommendation MUST be plain text. Do NOT embed JSON inside any field.");
+
         sb.AppendLine();
 
         sb.AppendLine($"Directorate: {directorate}");
@@ -164,6 +170,8 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         sb.AppendLine();
         sb.AppendLine("Records:");
         sb.AppendLine(context);
+        sb.AppendLine("Do not produce JSON inside any field.");
+        sb.AppendLine("Recommendation MUST be plain text. Do NOT embed JSON inside any field.");
 
         return sb.ToString();
     }  
@@ -176,53 +184,90 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("Sen kurumsal AI proje analizi yapan bir asistansın.");
-        sb.AppendLine("Aşağıdaki parça analizlerini tek bir nihai sonuca dönüştür.");
-        sb.AppendLine("Partial analizleri aynen kopyalama.");
-        sb.AppendLine("İç içe JSON yazma.");
-        sb.AppendLine("recommendation alanına JSON koyma.");
-        sb.AppendLine("Markdown, ```json veya açıklama yazma.");
-        sb.AppendLine("SADECE TEK BİR GEÇERLİ JSON NESNESİ DÖN.");
+        sb.AppendLine("You are an expert corporate AI automation analyst.");
+        sb.AppendLine("Your job is to merge partial task analyses and produce ONE final department-level AI automation analysis.");
+        sb.AppendLine();
+        sb.AppendLine("CRITICAL OUTPUT RULES:");
+        sb.AppendLine("- Return ONLY one valid JSON object.");
+        sb.AppendLine("- Do NOT use Markdown.");
+        sb.AppendLine("- Do NOT use ```json.");
+        sb.AppendLine("- Do NOT add explanations outside JSON.");
+        sb.AppendLine("- Do NOT nest JSON inside string fields.");
+        sb.AppendLine("- All property names must exactly match the schema.");
+        sb.AppendLine("- recommendation must be plain text only.");
+        sb.AppendLine("- projectIdeas MUST be a JSON array.");
+        sb.AppendLine("- projectIdeas MUST NOT be empty.");
+        sb.AppendLine("- You MUST generate exactly 5 projectIdeas.");
+        sb.AppendLine("- responsiblePeople MUST be a JSON array.");
+        sb.AppendLine("- responsiblePeople must contain unique people only.");
+        sb.AppendLine("- Do NOT repeat the same person twice.");
         sb.AppendLine();
 
-        sb.AppendLine($"Direktörlük: {directorate}");
+        sb.AppendLine($"Directorate: {directorate}");
 
         if (!string.IsNullOrWhiteSpace(department))
-            sb.AppendLine($"Departman: {department}");
+            sb.AppendLine($"Department: {department}");
 
         sb.AppendLine();
-        sb.AppendLine("JSON şeması birebir şu olsun:");
+        sb.AppendLine("JSON schema:");
         sb.AppendLine("""
-                     {
-                       "task": "Departmanın/direktörlüğün ana görev özeti",
-                       "bestSolution": "AI",
-                       "automationRate": 85,
-                       "recommendation": "Kısa ve net öneri metni",
-                       "projectIdea": "Tek ve somut AI/RPA/otomasyon proje fikri",
-                       "similarProjectName": "Benzer gerçek ürün/proje adı",
-                       "similarProjectLink": "https://..."
-                     }
-                     """);
+{
+  "task": "Final summary of the directorate/department responsibilities",
+  "bestSolution": "AI, RPA, Hybrid, or another suitable solution type",
+  "automationRate": 0,
+  "recommendation": "Plain text final recommendation",
+  "projectIdeas": [
+    {
+      "task": "Concrete task/responsibility name",
+      "projectIdea": "Concrete automation or AI project idea",
+      "similarProjectName": "Similar real product/project name or Not Found",
+      "similarProjectLink": "https://... or Not Found"
+    }
+  ],
+  "responsiblePeople": [
+    {
+      "name": "Person name",
+      "department": "Person department",
+      "reason": "Why this person is relevant"
+    }
+  ]
+}
+""");
 
         sb.AppendLine();
-        sb.AppendLine("Kurallar:");
-        sb.AppendLine("- Tüm alanları dolu üret.");
-        sb.AppendLine("- automationRate 0-100 arasında sayı olsun.");
-        sb.AppendLine("- bestSolution sadece AI, RPA veya senin bizze önereceğin bir yapı olsun.");
-        sb.AppendLine("- projectIdeaalanı JSON array olmalı.");
-        sb.AppendLine("- Tam olarak 5 proje üret");
-        sb.AppendLine("- Her proje hangi görev için önerdiysen burası önemli döküman içinde geçen görevin adıyla ver Task, projectIdea, similarProjectName ve similarProjectLink alanına sahip olmalı.");
-        sb.AppendLine("- similarProjectLink gerçek ürün/proje sayfası gibi görünmeli; bilmiyorsan 'Bulunamadı' yaz.");
+        sb.AppendLine("FIELD RULES:");
+        sb.AppendLine("- Fill all fields.");
+        sb.AppendLine("- automationRate must be a number between 0 and 100.");
+        sb.AppendLine("- bestSolution must be AI, RPA, Hybrid, or a clearly named new solution type.");
+        sb.AppendLine("- task must summarize the department's real responsibilities.");
+        sb.AppendLine("- recommendation must explain what should be automated and why.");
+        sb.AppendLine("- projectIdeas must contain exactly 5 items.");
+        sb.AppendLine("- Every projectIdeas item must have task, projectIdea, similarProjectName, and similarProjectLink.");
+        sb.AppendLine("- projectIdeas must be generated from the task, recommendation, department context, and partial analyses.");
+        sb.AppendLine("- Even if partial analyses have empty projectIdeas, you MUST create 5 new concrete project ideas.");
+        sb.AppendLine("- Each project idea must be directly related to this department's responsibilities.");
+        sb.AppendLine("- Do NOT return [] for projectIdeas.");
+        sb.AppendLine("- If you cannot find a real similar project, write Not Found.");
+        sb.AppendLine("- responsiblePeople must include relevant people from partial analyses if available.");
+        sb.AppendLine("- If no responsible people are available, return an empty array.");
         sb.AppendLine();
 
-        sb.AppendLine("Parça analizleri:");
+        sb.AppendLine("PARTIAL ANALYSES:");
         foreach (var part in partialAnalyses)
         {
-            sb.AppendLine("----");
+            sb.AppendLine("-----");
             sb.AppendLine(part);
         }
 
+        sb.AppendLine();
+        sb.AppendLine("FINAL REMINDER:");
+        sb.AppendLine("Return ONLY valid JSON.");
+        sb.AppendLine("projectIdeas MUST contain exactly 5 items.");
+        sb.AppendLine("projectIdeas MUST NOT be empty.");
+        sb.AppendLine("Do not write any text before or after JSON.");
+
         return sb.ToString();
+
     }
 
     public static string BuildPersonAiAnalysisPrompt( string sicilNo, string fullName, string birim, string mudurluk, List<string> relevantChunks)

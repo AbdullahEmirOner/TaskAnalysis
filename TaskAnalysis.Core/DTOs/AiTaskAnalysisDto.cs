@@ -7,7 +7,7 @@
         public int AutomationRate { get; init; }
         public string Recommendation { get; init; } = string.Empty;
 
-        public List<ProjectIdeaDto> ProjectIdea { get; set; } = new();
+        public List<ProjectIdeaDto> ProjectIdeas { get; set; } = new();
 
         public List<ResponsiblePersonDto> ResponsiblePeople { get; set; } = new();
 

@@ -121,6 +121,7 @@ public class AiService : IAiService
             .GetProperty("content")
             .GetString() ?? string.Empty;
     }
+
     /* 🧩 Fonksiyon Akış Şeması --> Task<string> AnalyzeAsync(string prompt)
     - Konfigürasyon Değerleri Alınıyor
 
@@ -272,6 +273,7 @@ public class AiService : IAiService
         {
             return new AiTaskAnalysisDto { Recommendation = json };
         }
+
     }
 
     public PersonAiAnalysisDto ParsePersonAiAnalysis(string json)

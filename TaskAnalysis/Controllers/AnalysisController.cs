@@ -192,7 +192,7 @@ public class AnalysisController : ControllerBase
             analyzedTask.ResponsiblePeople =
                 _responsiblePersonMatcherService.FindResponsiblePeople(
                     filtered,
-                    $"{analyzedTask.Task} {analyzedTask.ProjectIdea} {analyzedTask.Recommendation} {analyzedTask.BestSolution}",
+                    $"{analyzedTask.Task} {analyzedTask.ProjectIdeas} {analyzedTask.Recommendation} {analyzedTask.BestSolution}",
                     5
                 );
 
