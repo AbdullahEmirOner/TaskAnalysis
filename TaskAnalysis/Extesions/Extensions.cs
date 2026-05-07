@@ -53,7 +53,7 @@ services.AddScoped<IResponsiblePersonMatcherService, ResponsiblePersonMatcherSer
                 options.AddPolicy("AllowNetlify", policy =>
                 {
                     policy.WithOrigins("https://gorevtn.netlify.app",
-                        "https://localhost:3000")
+                        "https://localhost:3000", "http://localhost:3000")
                     .AllowAnyHeader()
                     .AllowAnyMethod();
                 });
