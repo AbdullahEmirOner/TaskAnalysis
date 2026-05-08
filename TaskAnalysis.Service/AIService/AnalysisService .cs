@@ -7,6 +7,7 @@ using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.Service.Builders;
+using TaskAnalysis.Service.Helpers;
 
 namespace TaskAnalysis.Service.AIService;
 
@@ -15,17 +16,19 @@ public class AnalysisService : IAnalysisService
     private readonly Dictionary<string, List<(string Text,float[] Vector)>> _vectorStore = new();
     private readonly ICsvReaderService _csvReaderService;
     private readonly IEmbeddingService _embeddingService;
+    private readonly IEmbeddingHelperService _embeddingHelperService;
     private readonly IAiService _aiService;
     private readonly IMemoryCache _cache;
     private readonly IConfiguration _configuration;
     private readonly IRetrievalService _retrieval;
     private readonly IVectorDbService _vectorDb;
     private readonly IApplicationDbContext _context;
-
-    public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService,
-        ICsvReaderService csvReaderService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context)
+    private readonly ITaskExtractionService _taskExtractionService;
+    public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService, ITaskExtractionService taskExtractionService,
+        ICsvReaderService csvReaderService, IEmbeddingHelperService embeddingHelperService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context)
     {
         _csvReaderService = csvReaderService;
+        _embeddingHelperService = embeddingHelperService;   
         _aiService = aiService;
         _configuration = configuration;
         _cache = cache;
@@ -33,6 +36,7 @@ public class AnalysisService : IAnalysisService
         _vectorDb = vectorDbService;
         _retrieval= retrieval;
         _context =context;
+        _taskExtractionService = taskExtractionService;
     }
    
     public List<DirectorateSummaryDto> BuildDirectoraterSummaries(List<TaskRecord> records)
@@ -177,8 +181,6 @@ public class AnalysisService : IAnalysisService
         return sb.ToString();
     }
 
-  
-    
     public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries)
     { /* BuildUniqueTask
        Şirket görev özetlerinden (DirectorateSummaryDto) çıkarılan benzersiz görevleri (UniqueTaskDto) üretmeni sağlıyor.
@@ -409,5 +411,197 @@ public class AnalysisService : IAnalysisService
 
         return result;
     }
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate)
+    {
+        if (string.IsNullOrWhiteSpace(directorate))
+            throw new ArgumentException("Direktörlük boş olamaz.");
 
+        directorate = directorate.Trim();
+
+        var folderPath = _configuration["CsvSettings:FolderPath"];
+
+        if (string.IsNullOrWhiteSpace(folderPath))
+            throw new Exception("CSV klasör yolu bulunamadı.");
+
+        var allRecords = _csvReaderService.ReadAllCsv(folderPath);
+
+        var directorateRecords = allRecords
+            .Where(x =>
+                !string.IsNullOrWhiteSpace(x.Birim) &&
+                x.Birim.Equals(directorate, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (!directorateRecords.Any())
+        {
+            return new DirectorateTaskAnalysisDto
+            {
+                Directorate = directorate
+            };
+        }
+
+        var result = new DirectorateTaskAnalysisDto
+        {
+            Directorate = directorate
+        };
+
+        var groupedDepartments = directorateRecords
+            .Where(x => !string.IsNullOrWhiteSpace(x.Mudurluk))
+            .GroupBy(x => x.Mudurluk!)
+            .ToList();
+
+        result.DepartmentCount = groupedDepartments.Count;
+
+        foreach (var departmentGroup in groupedDepartments)
+        {
+            var departmentName = departmentGroup.Key;
+
+            var extractedTasks = new List<string>();
+
+            foreach (var record in departmentGroup)
+            {
+                var tasks =
+                    _taskExtractionService.ExtractTasks(record.AnaSorumluluk);
+
+                extractedTasks.AddRange(tasks);
+            }
+
+            extractedTasks = extractedTasks
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToList();
+
+            var uniqueTasks = await DeduplicateTasksWithMemoryEmbeddingAsync(
+                directorate,
+                departmentName,
+                extractedTasks);
+
+            var departmentDto = new DepartmentTaskAnalysisDto
+            {
+                Department = departmentName,
+                OriginalTaskCount = extractedTasks.Count,
+                UniqueTaskCount = uniqueTasks.Count
+            };
+
+            var taskChunks = uniqueTasks
+                .Select((task, index) => new { task, index })
+                .GroupBy(x => x.index / 10)
+                .Select(g => g.Select(x => x.task).ToList())
+                .ToList();
+
+            foreach (var chunk in taskChunks)
+            {
+                var prompt = AiPromptBuilder.BuildTaskChunkAnalysisPrompt(
+                    directorate,
+                    departmentName,
+                    chunk);
+
+                var aiResponse = await _aiService.AnalyzeAsync(prompt);
+
+                var parsedTasks = ParseTaskAnalysisItems(aiResponse);
+
+                departmentDto.Tasks.AddRange(parsedTasks);
+            }
+
+            result.Departments.Add(departmentDto);
+        }
+
+        result.OriginalTaskCount =
+            result.Departments.Sum(x => x.OriginalTaskCount);
+
+        result.UniqueTaskCount =
+            result.Departments.Sum(x => x.UniqueTaskCount);
+
+        return result;
+    }
+
+    private async Task<List<string>> DeduplicateTasksWithMemoryEmbeddingAsync(
+    string directorate,
+    string department,
+    List<string> tasks)
+    {
+        var memoryIndex = new List<MemoryTaskIndexItemDto>();
+
+        var uniqueTasks = new List<string>();
+
+        foreach (var task in tasks)
+        {
+            var embedding =
+                await _embeddingService.CreateEmbeddingAsync(task);
+
+            var duplicate = false;
+
+            foreach (var indexed in memoryIndex)
+            {
+                var similarity =
+                    _vectorDb.CosineSimilarity(
+                        embedding,
+                        indexed.Embedding);
+
+                if (similarity >= 0.88)
+                {
+                    duplicate = true;
+                    break;
+                }
+            }
+
+            if (!duplicate)
+            {
+                uniqueTasks.Add(task);
+
+                memoryIndex.Add(new MemoryTaskIndexItemDto
+                {
+                    Directorate = directorate,
+                    Department = department,
+                    TaskText = task,
+                    Embedding = embedding
+                });
+            }
+        }
+
+        return uniqueTasks;
+    }
+
+    private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(aiResponse))
+                return new();
+
+            var cleanJson = aiResponse
+                .Replace("```json", "")
+                .Replace("```", "")
+                .Trim();
+
+            var start = cleanJson.IndexOf('[');
+            var end = cleanJson.LastIndexOf(']');
+
+            if (start == -1 || end == -1)
+                return new();
+
+            cleanJson =
+                cleanJson.Substring(start, end - start + 1);
+
+            var result =
+                JsonSerializer.Deserialize<List<TaskAiAnalysisItemDto>>(
+                    cleanJson,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+            return result ?? new();
+        }
+        catch
+        {
+            return new();
+        }
+    }
 }

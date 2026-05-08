@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskAnalysis.DAL.DbContext;
 
@@ -11,9 +12,10 @@ using TaskAnalysis.DAL.DbContext;
 namespace TaskAnalysis.DAL.Migrations
 {
     [DbContext(typeof(TaskAnalysisDbContext))]
-    partial class TaskAnalysisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508070903_task-ai-07")]
+    partial class taskai07
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

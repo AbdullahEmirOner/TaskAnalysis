@@ -1,11 +1,12 @@
-﻿using TaskAnalysis.Core.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
 using OTOKAR.TaskAnalysis.DAL.Readers;
+using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.DAL.DbContext;
 using TaskAnalysis.Service.AIService;
 using TaskAnalysis.Service.Helpers;
 using TaskAnalysis.Service.LangChainService;
 using TaskAnalysis.Service.Mini_LangChainService;
-using TaskAnalysis.DAL.DbContext;
-using Microsoft.EntityFrameworkCore;
+using TaskAnalysis.Service.Services;
 
 namespace TaskAnalysis.API.Extesions
 {
@@ -40,8 +41,11 @@ services.AddSingleton<IVectorDbService, VectorDbService>();
         Transient ?	Her çağrıda sıfır
         Singleton ?	Tek memory, her yerde aynı
          */
-        public static void AddAiService(this IServiceCollection services) =>
-services.AddHttpClient<IAiService, AiService>();
+        public static void AddAiService(this IServiceCollection services) => 
+            services.AddHttpClient<IAiService, AiService>();
+
+        public static void AddTaskExtractionService(this IServiceCollection services) => 
+            services.AddScoped<ITaskExtractionService, TaskExtractionService>();
 
         public static void AddResponsiblePersonMatcherService(this IServiceCollection services) =>
 services.AddScoped<IResponsiblePersonMatcherService, ResponsiblePersonMatcherService>();

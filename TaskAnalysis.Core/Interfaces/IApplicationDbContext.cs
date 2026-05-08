@@ -10,5 +10,7 @@ namespace TaskAnalysis.Core.Interfaces
         DbSet<PersonAiAnalysisResult> PersonAiAnalysisResults { get; set; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+        DbSet<DirectorateTaskAnalysisResult> DirectorateTaskAnalysisResults { get; set; }
     }
 }

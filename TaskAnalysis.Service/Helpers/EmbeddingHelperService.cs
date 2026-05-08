@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.Interfaces;
 
 namespace TaskAnalysis.Service.Helpers
@@ -57,6 +59,41 @@ Eğer normalize etmezsen, uzun metinler hep daha “büyük” görünür ve ben
 
             for (int i = 0; i < vector.Length; i++)
                 vector[i] = (float)(vector[i] / magnitude);
+        }
+
+        public List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(aiResponse))
+                    return new List<TaskAiAnalysisItemDto>();
+
+                var cleanJson = aiResponse
+                    .Replace("```json", "")
+                    .Replace("```", "")
+                    .Trim();
+
+                var start = cleanJson.IndexOf('[');
+                var end = cleanJson.LastIndexOf(']');
+
+                if (start == -1 || end == -1)
+                    return new List<TaskAiAnalysisItemDto>();
+
+                cleanJson = cleanJson.Substring(start, end - start + 1);
+
+                var result = JsonSerializer.Deserialize<List<TaskAiAnalysisItemDto>>(
+                    cleanJson,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                return result ?? new List<TaskAiAnalysisItemDto>();
+            }
+            catch
+            {
+                return new List<TaskAiAnalysisItemDto>();
+            }
         }
     }
 }

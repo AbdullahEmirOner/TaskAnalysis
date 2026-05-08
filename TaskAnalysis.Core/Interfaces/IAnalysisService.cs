@@ -16,5 +16,6 @@ namespace TaskAnalysis.Core.Interfaces
 
         Task<PersonAiAnalysisDto> AnalyzePersonBySicilNoAsync(string sicilNo);
 
+        Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate);
     }
 }

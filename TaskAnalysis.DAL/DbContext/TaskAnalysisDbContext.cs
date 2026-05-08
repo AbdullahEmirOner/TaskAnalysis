@@ -16,6 +16,8 @@ namespace TaskAnalysis.DAL.DbContext
 
         public DbSet<PersonAiAnalysisResult> PersonAiAnalysisResults { get; set; }
 
+        public DbSet<DirectorateTaskAnalysisResult> DirectorateTaskAnalysisResults { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -27,6 +29,13 @@ namespace TaskAnalysis.DAL.DbContext
             modelBuilder.Entity<PersonAiAnalysisResult>()
                 .HasIndex(x => x.SicilNo)
                 .IsUnique();
+            modelBuilder.Entity<DirectorateTaskAnalysisResult>()
+    .HasIndex(x => x.Directorate)
+    .IsUnique();
+
+            modelBuilder.Entity<DirectorateTaskAnalysisResult>()
+                .Property(x => x.ResultJson)
+                .HasColumnType("nvarchar(max)");
         }
     }
 }

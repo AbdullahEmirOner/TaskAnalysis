@@ -17,7 +17,8 @@ public class AnalysisController : ControllerBase
     private readonly IResponsiblePersonMatcherService _responsiblePersonMatcherService;
     private readonly ICsvReaderService _csvReaderService;
     private readonly IAnalysisService _analysisService;
-    private readonly IConfiguration _configuration;
+    private readonly IConfiguration _configuration; 
+    private readonly IEmbeddingHelperService _embeddingHelperService;
     private readonly IMemoryCache _cache;
     private readonly IRetrievalService _retrieval;
     private readonly IAiService _aiService;
@@ -29,6 +30,7 @@ public class AnalysisController : ControllerBase
     IConfiguration configuration,
     IAiService aiService,
     IMemoryCache cache,
+    IEmbeddingHelperService embeddingHelperService,
     IRetrievalService retrieval,
     IApplicationDbContext context,
     IResponsiblePersonMatcherService responsiblePersonMatcherService) // IAiMockService aiService
@@ -41,6 +43,7 @@ public class AnalysisController : ControllerBase
         _context = context;
         _responsiblePersonMatcherService = responsiblePersonMatcherService;
         _retrieval = retrieval;
+        _embeddingHelperService = embeddingHelperService;
     }
 
     [HttpGet("raw")]
@@ -332,6 +335,74 @@ public class AnalysisController : ControllerBase
 
             return Ok(result);
         }
+
+    [HttpGet("directorate/{directorate}/tasks/ai-analysis")]
+    public async Task<IActionResult> AnalyzeDirectorateTasks(string directorate)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(directorate))
+                return BadRequest("Direktörlük boş olamaz.");
+
+            directorate = directorate.Trim();
+
+            // 1) Önce DB kontrol
+            var existing = await _context.DirectorateTaskAnalysisResults
+                .FirstOrDefaultAsync(x => x.Directorate == directorate);
+
+            if (existing != null)
+            {
+                var cachedResult =
+                    JsonSerializer.Deserialize<DirectorateTaskAnalysisDto>(
+                        existing.ResultJson,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                if (cachedResult != null)
+                {
+                    return Ok(new
+                    {
+                        fromCache = true,
+                        source = "database",
+                        createdAt = existing.CreatedAt,
+                        data = cachedResult
+                    });
+                }
+            }
+
+            // 2) DB’de yoksa AI çalıştır
+            var result = await _analysisService
+                .AnalyzeDirectorateTasksWithMemoryIndexAsync(directorate);
+
+            // 3) DB’ye kaydet
+            var entity = new DirectorateTaskAnalysisResult
+            {
+                Directorate = directorate,
+                ResultJson = JsonSerializer.Serialize(result),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.DirectorateTaskAnalysisResults.Add(entity);
+            await _context.SaveChangesAsync();
+
+            // 4) Sonucu dön
+            return Ok(new
+            {
+                fromCache = false,
+                source = "ai-created-and-saved",
+                createdAt = entity.CreatedAt,
+                data = result
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(
+                500,
+                $"Görev bazlı AI analizi sırasında hata oluştu: {ex.Message}");
+        }
+    }
 
     /*    [HttpGet("ai-mock-analysis")]
         public IActionResult GetAiAnalysis()

@@ -197,7 +197,14 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         sb.AppendLine("- recommendation must be plain text only.");
         sb.AppendLine("- projectIdeas MUST be a JSON array.");
         sb.AppendLine("- projectIdeas MUST NOT be empty.");
-        sb.AppendLine("- You MUST generate exactly 5 projectIdeas.");
+        sb.AppendLine($"First, determine how many distinct tasks exist in the provided input.");
+        sb.AppendLine($"Then, you MUST generate exactly the same number of project ideas as the number of distinct tasks you identified.");
+        sb.AppendLine("There must be a strict one-to-one mapping:");
+        sb.AppendLine("- 1 task = 1 AI analysis");
+        sb.AppendLine("- 1 task = 1 project idea");
+        sb.AppendLine("- 1 task = 1 similar project name");
+        sb.AppendLine("- 1 task = 1 similar project link");
+        sb.AppendLine("Do NOT generate fewer or more project ideas than the task count.");
         sb.AppendLine("- responsiblePeople MUST be a JSON array.");
         sb.AppendLine("- responsiblePeople must contain unique people only.");
         sb.AppendLine("- Do NOT repeat the same person twice.");
@@ -233,7 +240,9 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
   ]
 }
 """);
-
+        sb.AppendLine("CRITICAL: Do NOT summarize the whole department as one task.");
+        sb.AppendLine("CRITICAL: Split the responsibilities into separate distinct tasks.");
+        sb.AppendLine("CRITICAL: If you identify 8 tasks, projectIdeas must contain exactly 8 items.");
         sb.AppendLine();
         sb.AppendLine("FIELD RULES:");
         sb.AppendLine("- Fill all fields.");
@@ -330,6 +339,56 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
   ]
 }
 """);
+
+        return sb.ToString();
+    }
+
+    public static string BuildTaskChunkAnalysisPrompt( string directorate, string department, List<string> tasks)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("You are a corporate AI automation analyst.");
+        sb.AppendLine("Analyze each task separately.");
+        sb.AppendLine("Return ONLY valid JSON array.");
+        sb.AppendLine("Do not use markdown.");
+        sb.AppendLine("Do not use ```json.");
+        sb.AppendLine();
+
+        sb.AppendLine($"Directorate: {directorate}");
+        sb.AppendLine($"Department: {department}");
+        sb.AppendLine();
+
+        sb.AppendLine("Tasks:");
+        for (int i = 0; i < tasks.Count; i++)
+        {
+            sb.AppendLine($"{i + 1}. {tasks[i]}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Return JSON array exactly in this schema:");
+        sb.AppendLine("""
+[
+  {
+    "department": "Department name",
+    "originalTask": "Original task text",
+    "taskSummary": "Short clear Turkish summary of the task",
+    "aiSupportRate": 0,
+    "projectIdea": "One concrete AI/RPA/automation project idea for this task",
+    "similarProjectName": "Similar real product/project name or Not Found",
+    "similarProjectLink": "https://... or Not Found"
+  }
+]
+""");
+
+        sb.AppendLine();
+        sb.AppendLine("Rules:");
+        sb.AppendLine("- Return one JSON object for each task.");
+        sb.AppendLine("- aiSupportRate must be between 0 and 100.");
+        sb.AppendLine("- taskSummary must be Turkish.");
+        sb.AppendLine("- projectIdea must be concrete and related to the task.");
+        sb.AppendLine("- If no real similar project is known, use Not Found.");
+        sb.AppendLine("- similarProjectLink must be a URL or Not Found.");
+        sb.AppendLine("- Return only JSON array.");
 
         return sb.ToString();
     }

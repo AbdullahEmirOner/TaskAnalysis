@@ -15,13 +15,14 @@ builder.Services.AddRetrievalService();
 builder.Services.AddEmbeddingService();
 builder.Services.AddEmbeddingHelperService();
 builder.Services.AddAnalysisService();
-builder.Services.AddVectorDbService();
+builder.Services.AddTaskExtractionService();
+builder.Services.AddVectorDbService(); 
 builder.Services.AddAiService();
 builder.Services.AddResponsiblePersonMatcherService();
 builder.Services.AddPolicy();
-builder.Services.AddScoped<IApplicationDbContext>(provider =>
-    provider.GetRequiredService<TaskAnalysisDbContext>());
+builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<TaskAnalysisDbContext>());
 builder.Services.AddMemoryCache();
+
 var app = builder.Build();
 
 app.UseSwagger();
