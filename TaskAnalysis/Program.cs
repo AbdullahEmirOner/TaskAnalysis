@@ -25,12 +25,18 @@ builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
+app.UseHttpsRedirection();
+app.UseRouting();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowNetlify");
+
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
