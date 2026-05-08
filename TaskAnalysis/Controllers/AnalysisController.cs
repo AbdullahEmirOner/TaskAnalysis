@@ -8,8 +8,9 @@ using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.Service.Builders;
 
 namespace TaskAnalysis.API.Controllers;
-//------------------------------------------------- CRUD işlemleri maalesef burada oluyor refactoring yapılmalı (Katmanlar iç içe girmiş durumda) ------------------------------------------------------------------------
+//------------------------------------------------- CRUD işlemleri maalesef burada oluyor refactoring yapılmalı (Katmanlar iç içe girmiş durumda) --------------------------------------------------------------
 //--------------------------------------------- Direktorlükler için service katmanında yeni fonksiyon yazılmalı !!! ve service katmanı da parçalnmalı ----------------------------------------------------------
+
 [ApiController]
 [Route("api/[controller]")]
 public class AnalysisController : ControllerBase
@@ -24,10 +25,7 @@ public class AnalysisController : ControllerBase
     private readonly IAiService _aiService;
     private readonly IApplicationDbContext _context;
 
-    public AnalysisController(
-    ICsvReaderService csvReaderService,
-    IAnalysisService analysisService,
-    IConfiguration configuration,
+    public AnalysisController(ICsvReaderService csvReaderService, IAnalysisService analysisService, IConfiguration configuration, 
     IAiService aiService,
     IMemoryCache cache,
     IEmbeddingHelperService embeddingHelperService,
@@ -87,7 +85,6 @@ public class AnalysisController : ControllerBase
 
         return Ok(chatbotContext);
     }
-
 
     [HttpGet("ai-analysis/{directorate}")]
     public async Task<IActionResult> GetAiAnalysis(string directorate, [FromQuery] string? department)
@@ -174,7 +171,7 @@ public class AnalysisController : ControllerBase
             // Chunk üretimi
             var chunks = filtered
                 .Select((record, index) => new { record, index })
-                .GroupBy(x => x.index / 20)
+                .GroupBy(x => x.index / 200)
                 .Select(g => string.Join("\n", g.Select(x =>
                     $"Müdürlük: {x.record.Mudurluk} | " +
                     $"Birim: {x.record.Birim} | " +
@@ -344,11 +341,11 @@ public class AnalysisController : ControllerBase
             if (string.IsNullOrWhiteSpace(directorate))
                 return BadRequest("Direktörlük boş olamaz.");
 
-            directorate = directorate.Trim();
+            var safeDirectorate = directorate.Trim();
 
             // 1) Önce DB kontrol
             var existing = await _context.DirectorateTaskAnalysisResults
-                .FirstOrDefaultAsync(x => x.Directorate == directorate);
+                .FirstOrDefaultAsync(x => x.Directorate == safeDirectorate);
 
             if (existing != null)
             {
@@ -372,14 +369,89 @@ public class AnalysisController : ControllerBase
                 }
             }
 
-            // 2) DB’de yoksa AI çalıştır
-            var result = await _analysisService
-                .AnalyzeDirectorateTasksWithMemoryIndexAsync(directorate);
+            var folderPath = _configuration["CsvSettings:FolderPath"];
 
-            // 3) DB’ye kaydet
+            if (string.IsNullOrWhiteSpace(folderPath))
+                return BadRequest("CSV klasör yolu tanımlı değil.");
+
+            var records = _csvReaderService.ReadAllCsv(folderPath);
+
+            var filtered = records
+                .Where(x => !string.IsNullOrWhiteSpace(x.Birim)
+                    && x.Birim.Equals(safeDirectorate, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (!filtered.Any())
+                return NotFound("Bu direktörlük için veri bulunamadı.");
+
+            // 2) Eski endpointteki gibi chunk üretimi
+            var chunks = filtered
+                .Select((record, index) => new { record, index })
+                .GroupBy(x => x.index / 30)
+                .Select(g => string.Join("\n", g.Select(x =>
+                    $"Müdürlük: {x.record.Mudurluk} | " +
+                    $"Birim: {x.record.Birim} | " +
+                    $"Amaç: {x.record.Amac} | " +
+                    $"Yetki: {x.record.Yetki} | " +
+                    $"Ana Sorumluluk: {x.record.AnaSorumluluk}"
+                )))
+                .ToList();
+
+            var result = new DirectorateTaskAnalysisDto
+            {
+                Directorate = safeDirectorate
+            };
+
+            // 3) Her chunk’ı AI’a görev bazlı analiz ettir
+            foreach (var chunk in chunks)
+            {
+                var prompt = AiPromptBuilder.BuildTaskChunkAnalysisPrompt(
+                    safeDirectorate,
+                    "MULTIPLE_DEPARTMENTS",
+                    new List<string> { chunk }
+                );
+
+                var aiResponse = await _aiService.AnalyzeAsync(prompt);
+
+                var parsedTasks = ParseTaskAnalysisItems(aiResponse);
+
+                foreach (var item in parsedTasks)
+                {
+                    var departmentName = string.IsNullOrWhiteSpace(item.Department)
+                        ? "Bilinmeyen Müdürlük"
+                        : item.Department;
+
+                    var departmentDto = result.Departments
+                        .FirstOrDefault(x => x.Department == departmentName);
+
+                    if (departmentDto == null)
+                    {
+                        departmentDto = new DepartmentTaskAnalysisDto
+                        {
+                            Department = departmentName
+                        };
+
+                        result.Departments.Add(departmentDto);
+                    }
+
+                    departmentDto.Tasks.Add(item);
+                }
+            }
+
+            foreach (var department in result.Departments)
+            {
+                department.OriginalTaskCount = department.Tasks.Count;
+                department.UniqueTaskCount = department.Tasks.Count;
+            }
+
+            result.DepartmentCount = result.Departments.Count;
+            result.OriginalTaskCount = result.Departments.Sum(x => x.OriginalTaskCount);
+            result.UniqueTaskCount = result.Departments.Sum(x => x.UniqueTaskCount);
+
+            // 4) DB’ye kaydet
             var entity = new DirectorateTaskAnalysisResult
             {
-                Directorate = directorate,
+                Directorate = safeDirectorate,
                 ResultJson = JsonSerializer.Serialize(result),
                 CreatedAt = DateTime.UtcNow
             };
@@ -387,12 +459,12 @@ public class AnalysisController : ControllerBase
             _context.DirectorateTaskAnalysisResults.Add(entity);
             await _context.SaveChangesAsync();
 
-            // 4) Sonucu dön
             return Ok(new
             {
                 fromCache = false,
                 source = "ai-created-and-saved",
                 createdAt = entity.CreatedAt,
+                chunkCount = chunks.Count,
                 data = result
             });
         }
@@ -403,7 +475,40 @@ public class AnalysisController : ControllerBase
                 $"Görev bazlı AI analizi sırasında hata oluştu: {ex.Message}");
         }
     }
+    private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(aiResponse))
+                return new();
 
+            var cleanJson = aiResponse
+                .Replace("```json", "")
+                .Replace("```", "")
+                .Trim();
+
+            var start = cleanJson.IndexOf('[');
+            var end = cleanJson.LastIndexOf(']');
+
+            if (start == -1 || end == -1)
+                return new();
+
+            cleanJson = cleanJson.Substring(start, end - start + 1);
+
+            var result = JsonSerializer.Deserialize<List<TaskAiAnalysisItemDto>>(
+                cleanJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            return result ?? new();
+        }
+        catch
+        {
+            return new();
+        }
+    }
     /*    [HttpGet("ai-mock-analysis")]
         public IActionResult GetAiAnalysis()
         {

@@ -109,7 +109,7 @@ namespace TaskAnalysis.Service.Mini_LangChainService
             if (records == null || records.Count == 0)
                 throw new Exception("CSV okundu ama kayıt bulunamadı.");
 
-            var chunks = CreateChunks(records, 20);
+            var chunks = CreateChunks(records, 5);
 
             _vectorDb.Clear(safeFileName);
 
@@ -129,7 +129,7 @@ namespace TaskAnalysis.Service.Mini_LangChainService
             };
         }
 
-        public List<string> CreateChunks(List<TaskRecord> records, int chunkSize = 20)
+        public List<string> CreateChunks(List<TaskRecord> records, int chunkSize = 10)
         {
             var chunks = new List<string>();
 

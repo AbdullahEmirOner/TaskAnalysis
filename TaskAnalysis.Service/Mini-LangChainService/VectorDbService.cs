@@ -82,7 +82,7 @@ public class VectorDbService : IVectorDbService
         return Task.FromResult(results);
     }
 
-    public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 5) // Tüm dosyalarda kayıtlı embedding’ler arasında arama yapıyor.
+    public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 3) // Tüm dosyalarda kayıtlı embedding’ler arasında arama yapıyor.
     {
         var allItems = _store
             .SelectMany(file => file.Value.Select(item => new
