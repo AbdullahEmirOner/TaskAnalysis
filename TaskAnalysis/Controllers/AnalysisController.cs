@@ -509,7 +509,8 @@ public class AnalysisController : ControllerBase
             return new();
         }
     }
-    /*    [HttpGet("ai-mock-analysis")]
+  
+    /* [HttpGet("ai-mock-analysis")]
         public IActionResult GetAiAnalysis()
         {
             var folderPath = _configuration["CsvSettings:FolderPath"];
