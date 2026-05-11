@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TaskAnalysis.Core.Entities
+namespace TaskAnalysis.Core.Entities.RecordEntities
 {
     public class PersonAiAnalysisResult
     {

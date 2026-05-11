@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TaskAnalysis.Core.Entities
+namespace TaskAnalysis.Core.Entities.RecordEntities
 {
     public class DirectorateTaskAnalysisResult
     {
