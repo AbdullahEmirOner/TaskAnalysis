@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace TaskAnalysis.Core.Entities
 {
-    public class DepartmentAiAnalysisResult
+    public class DepartmentAiAnalysisResult 
+   // Eski sürümden kalmış olma entity 11.05.2026, referanslarda eski kodların silinmemesinden kaynaklı !!!
     {
         public int Id { get; set; }
 

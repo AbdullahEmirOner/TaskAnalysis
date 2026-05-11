@@ -1,4 +1,4 @@
-﻿namespace TaskAnalysis.Core.DTOs
+﻿namespace TaskAnalysis.Core.DTOs.DepartmentDTOs
 {
     public class DepartmentTaskAnalysisDto
     {

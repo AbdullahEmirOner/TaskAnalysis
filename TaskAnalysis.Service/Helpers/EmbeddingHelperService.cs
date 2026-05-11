@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using TaskAnalysis.Core.DTOs;
+using TaskAnalysis.Core.DTOs.DepartmentDTOs;
 using TaskAnalysis.Core.Interfaces;
 
 namespace TaskAnalysis.Service.Helpers

@@ -1,4 +1,4 @@
-﻿namespace TaskAnalysis.Core.DTOs
+﻿namespace TaskAnalysis.Core.DTOs.AIDTOs
 {
     public record AiDirectorateDto
     {

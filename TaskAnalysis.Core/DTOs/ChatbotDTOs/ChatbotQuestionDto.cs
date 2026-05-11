@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TaskAnalysis.Core.DTOs
+namespace TaskAnalysis.Core.DTOs.ChatbotDTOs
 {
     public class ChatbotQuestionDto
     {

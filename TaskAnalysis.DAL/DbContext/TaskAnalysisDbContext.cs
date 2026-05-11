@@ -4,11 +4,9 @@ using TaskAnalysis.Core.Interfaces;
 
 namespace TaskAnalysis.DAL.DbContext
 {
-    public class TaskAnalysisDbContext
-        : Microsoft.EntityFrameworkCore.DbContext, IApplicationDbContext
+    public class TaskAnalysisDbContext : Microsoft.EntityFrameworkCore.DbContext, IApplicationDbContext
     {
-        public TaskAnalysisDbContext(DbContextOptions<TaskAnalysisDbContext> options)
-            : base(options)
+        public TaskAnalysisDbContext(DbContextOptions<TaskAnalysisDbContext> options) : base(options)
         {
         }
 
@@ -30,8 +28,8 @@ namespace TaskAnalysis.DAL.DbContext
                 .HasIndex(x => x.SicilNo)
                 .IsUnique();
             modelBuilder.Entity<DirectorateTaskAnalysisResult>()
-    .HasIndex(x => x.Directorate)
-    .IsUnique();
+                .HasIndex(x => x.Directorate)
+                .IsUnique();
 
             modelBuilder.Entity<DirectorateTaskAnalysisResult>()
                 .Property(x => x.ResultJson)

@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using TaskAnalysis.Core.DTOs;
+using TaskAnalysis.Core.DTOs.AIDTOs;
+using TaskAnalysis.Core.DTOs.ChatbotDTOs;
+using TaskAnalysis.Core.DTOs.DepartmentDTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.Service.Builders;
@@ -426,7 +429,7 @@ public class AnalysisController : ControllerBase
 
                     if (departmentDto == null)
                     {
-                        departmentDto = new DepartmentTaskAnalysisDto
+                        departmentDto = new Core.DTOs.DepartmentDTOs.DepartmentTaskAnalysisDto
                         {
                             Department = departmentName
                         };

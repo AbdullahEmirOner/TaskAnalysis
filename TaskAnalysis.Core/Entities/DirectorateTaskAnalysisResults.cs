@@ -8,7 +8,7 @@ namespace TaskAnalysis.Core.Entities
 
         public string Directorate { get; set; } = string.Empty;
 
-        [Column(TypeName = "nvarchar(max)")]
+        [Column(TypeName = "nvarchar(max)")] // nvarchar(max) ile 2 GB’a kadar metin saklanabilir.
         public string ResultJson { get; set; } = "{}";
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace TaskAnalysis.Core.Entities
 {
-    public class TaskRecordCsvModel
+    public class TaskRecordCsvModel // Bu ve TaskRecord sınıflarının yapısı aynı, ancak TaskRecordCsvModel sadece CSV'den veri okumak için kullanılır,
+    // TaskRecord ise uygulama içinde kullanılacak genel bir modeldir. --> DTOs tarafında da olabilirdi burda da olur
     {
         public string? SicilNo { get; set; } = string.Empty;
     //  public string? Birim { get; set; } = string.Empty;

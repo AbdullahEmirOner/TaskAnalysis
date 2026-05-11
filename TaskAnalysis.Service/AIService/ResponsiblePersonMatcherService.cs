@@ -1,4 +1,4 @@
-﻿using TaskAnalysis.Core.DTOs;
+﻿using TaskAnalysis.Core.DTOs.AIDTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
 

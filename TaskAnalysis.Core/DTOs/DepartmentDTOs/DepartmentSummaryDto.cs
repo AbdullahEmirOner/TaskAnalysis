@@ -1,4 +1,4 @@
-﻿namespace TaskAnalysis.Core.DTOs
+﻿namespace TaskAnalysis.Core.DTOs.DepartmentDTOs
 {
     // Kod içinde unique yapı sağlamak için aynı yazılmış veriler temizleniyor.
     // AI eğitimine bundan kayaklı sorunlar oluşabilir.

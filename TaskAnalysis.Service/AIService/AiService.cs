@@ -2,7 +2,8 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using TaskAnalysis.Core.DTOs;
+using TaskAnalysis.Core.DTOs.AIDTOs;
+using TaskAnalysis.Core.DTOs.PersonDTOs;
 using TaskAnalysis.Core.Interfaces;
 
 namespace TaskAnalysis.Service.AIService;

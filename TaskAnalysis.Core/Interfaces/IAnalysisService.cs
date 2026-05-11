@@ -1,4 +1,7 @@
 ﻿using TaskAnalysis.Core.DTOs;
+using TaskAnalysis.Core.DTOs.ChatbotDTOs;
+using TaskAnalysis.Core.DTOs.DirectorateDTOs;
+using TaskAnalysis.Core.DTOs.PersonDTOs;
 using TaskAnalysis.Core.Entities;
 
 namespace TaskAnalysis.Core.Interfaces
