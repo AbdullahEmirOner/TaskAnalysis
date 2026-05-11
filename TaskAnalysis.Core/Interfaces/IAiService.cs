@@ -16,8 +16,5 @@ namespace TaskAnalysis.Core.Interfaces
 
         Task<string> AnalyzeAsync(string prompt);
 
-        public AiTaskAnalysisDto ParseTaskAnalysis(string json);
-
-        PersonAiAnalysisDto ParsePersonAiAnalysis(string json);
     }
 }

@@ -7,7 +7,9 @@ using TaskAnalysis.Core.DTOs.AIDTOs;
 using TaskAnalysis.Core.DTOs.ChatbotDTOs;
 using TaskAnalysis.Core.DTOs.DepartmentDTOs;
 using TaskAnalysis.Core.Entities;
+using TaskAnalysis.Core.Entities.RecordEntities;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.IAIService;
 using TaskAnalysis.Core.Interfaces.ICsvReader;
 using TaskAnalysis.Core.Interfaces.IDbContext;
 using TaskAnalysis.Core.Interfaces.IRAG;
@@ -24,6 +26,7 @@ public class AnalysisController : ControllerBase
     private readonly IResponsiblePersonMatcherService _responsiblePersonMatcherService;
     private readonly ICsvReaderService _csvReaderService;
     private readonly IAnalysisService _analysisService;
+    private readonly IParseHeleprService _parseHeleprService;
     private readonly IConfiguration _configuration; 
     private readonly IEmbeddingHelperService _embeddingHelperService;
     private readonly IMemoryCache _cache;
@@ -37,7 +40,8 @@ public class AnalysisController : ControllerBase
     IEmbeddingHelperService embeddingHelperService,
     IRetrievalService retrieval,
     IApplicationDbContext context,
-    IResponsiblePersonMatcherService responsiblePersonMatcherService) // IAiMockService aiService
+    IResponsiblePersonMatcherService responsiblePersonMatcherService,
+    IParseHeleprService parseHeleprService) // IAiMockService aiService
     {
         _csvReaderService = csvReaderService;
         _analysisService = analysisService;
@@ -48,6 +52,7 @@ public class AnalysisController : ControllerBase
         _responsiblePersonMatcherService = responsiblePersonMatcherService;
         _retrieval = retrieval;
         _embeddingHelperService = embeddingHelperService;
+        _parseHeleprService = parseHeleprService;
     }
 
     [HttpGet("raw")]
@@ -208,7 +213,7 @@ public class AnalysisController : ControllerBase
             );
 
             var finalAnalysis = await _aiService.AnalyzeAsync(finalPrompt);
-            var analyzedTask = _aiService.ParseTaskAnalysis(finalAnalysis);
+            var analyzedTask = _parseHeleprService.ParseTaskAnalysis(finalAnalysis);
 
             analyzedTask.ResponsiblePeople =
                 _responsiblePersonMatcherService.FindResponsiblePeople(
@@ -481,6 +486,7 @@ public class AnalysisController : ControllerBase
                 $"Görev bazlı AI analizi sırasında hata oluştu: {ex.Message}");
         }
     }
+
     private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
     {
         try

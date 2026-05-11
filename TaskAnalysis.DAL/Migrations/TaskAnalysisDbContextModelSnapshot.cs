@@ -16,6 +16,7 @@ namespace TaskAnalysis.DAL.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
+
             modelBuilder
                 .HasAnnotation("ProductVersion", "6.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
@@ -131,6 +132,7 @@ namespace TaskAnalysis.DAL.Migrations
 
                     b.ToTable("PersonAiAnalysisResults");
                 });
+
 #pragma warning restore 612, 618
         }
     }

@@ -10,7 +10,9 @@ using TaskAnalysis.Core.DTOs.DirectorateDTOs;
 using TaskAnalysis.Core.DTOs.PersonDTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Entities.CSVEntities;
+using TaskAnalysis.Core.Entities.RecordEntities;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.IAIService;
 using TaskAnalysis.Core.Interfaces.ICsvReader;
 using TaskAnalysis.Core.Interfaces.IDbContext;
 using TaskAnalysis.Core.Interfaces.IRAG;
@@ -27,13 +29,14 @@ public class AnalysisService : IAnalysisService
     private readonly IEmbeddingHelperService _embeddingHelperService;
     private readonly IAiService _aiService;
     private readonly IMemoryCache _cache;
+    private readonly IParseHeleprService _parseHeleprService;
     private readonly IConfiguration _configuration;
     private readonly IRetrievalService _retrieval;
     private readonly IVectorDbService _vectorDb;
     private readonly IApplicationDbContext _context;
     private readonly ITaskExtractionService _taskExtractionService;
     public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService, ITaskExtractionService taskExtractionService,
-        ICsvReaderService csvReaderService, IEmbeddingHelperService embeddingHelperService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context)
+        ICsvReaderService csvReaderService, IEmbeddingHelperService embeddingHelperService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context, IParseHeleprService parseHeleprService)
     {
         _csvReaderService = csvReaderService;
         _embeddingHelperService = embeddingHelperService;   
@@ -45,6 +48,7 @@ public class AnalysisService : IAnalysisService
         _retrieval= retrieval;
         _context =context;
         _taskExtractionService = taskExtractionService;
+        _parseHeleprService = parseHeleprService;
     }
    
     public List<DirectorateSummaryDto> BuildDirectoraterSummaries(List<TaskRecord> records)
@@ -391,7 +395,7 @@ public class AnalysisService : IAnalysisService
 
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
-        var result = _aiService.ParsePersonAiAnalysis(aiResponse);
+        var result = _parseHeleprService.ParsePersonAiAnalysis(aiResponse);
 
         result.SicilNo = sicilNo;
         result.FullName = fullName;
@@ -419,14 +423,16 @@ public class AnalysisService : IAnalysisService
 
         return result;
     }
-    // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   
     public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(
         string directorate,
         int chunkSize = 200)
@@ -532,10 +538,7 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
-    private async Task<List<string>> DeduplicateTasksWithMemoryEmbeddingAsync(
-    string directorate,
-    string department,
-    List<string> tasks)
+    private async Task<List<string>> DeduplicateTasksWithMemoryEmbeddingAsync(string directorate, string department, List<string> tasks)
     {
         var memoryIndex = new List<MemoryTaskIndexItemDto>();
 

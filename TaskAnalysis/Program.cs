@@ -2,6 +2,7 @@ using TaskAnalysis.API.Extesions;
 using TaskAnalysis.Core.Interfaces.IDbContext;
 using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.DAL.DbContext;
+using TaskAnalysis.Service.AIService;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +15,9 @@ builder.Services.ConfigureSqlContext(builder.Configuration);
 builder.Services.AddCsvTaskReaders();
 builder.Services.AddRetrievalService();
 builder.Services.AddEmbeddingService(); 
-builder.Services.AddEmbeddingHelperService();
+builder.Services.AddEmbeddingHelperService(); 
 builder.Services.AddCsvReadersHelper();
+builder.Services.AddParseHelperService();
 builder.Services.AddAnalysisService();
 builder.Services.AddTaskExtractionService();
 builder.Services.AddVectorDbService(); 

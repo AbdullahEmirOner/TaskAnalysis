@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OTOKAR.TaskAnalysis.DAL.Readers;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.IAIService;
 using TaskAnalysis.Core.Interfaces.ICsvReader;
 using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.DAL.DbContext;
@@ -20,8 +21,12 @@ namespace TaskAnalysis.API.Extesions
             services.AddDbContext<TaskAnalysisDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("sqlConnection")));
             //ASP.NET Core otomatik olarak Scoped lifetime ile kaydediyor.
         }
-        public static void AddCsvTaskReaders(this IServiceCollection services) =>
+        
+        public static void AddCsvTaskReaders(this IServiceCollection services) => 
             services.AddScoped<ICsvReaderService, CsvTaskReaders>();
+
+        public static void AddParseHelperService(this IServiceCollection services) =>
+    services.AddScoped<IParseHeleprService, ParseHeleprService>();
 
         public static void AddRetrievalService(this IServiceCollection services) =>
             services.AddScoped<IRetrievalService, RetrievalService>();
