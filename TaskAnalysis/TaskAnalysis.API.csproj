@@ -18,6 +18,7 @@
     <ProjectReference Include="..\TaskAnalysis.Core\TaskAnalysis.Core.csproj" />
     <ProjectReference Include="..\TaskAnalysis.DAL\TaskAnalysis.DAL.csproj" />
     <ProjectReference Include="..\TaskAnalysis.Service\TaskAnalysis.Service.csproj" />
+    <ProjectReference Include="..\TaskAnalysis.Share\TaskAnalysis.Share.csproj" />
   </ItemGroup>
 
 </Project>

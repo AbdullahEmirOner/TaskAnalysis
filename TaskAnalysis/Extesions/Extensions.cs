@@ -1,8 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OTOKAR.TaskAnalysis.DAL.Readers;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.ICsvReader;
 using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.DAL.DbContext;
+using TaskAnalysis.DAL.Helpers;
 using TaskAnalysis.Service.AIService;
 using TaskAnalysis.Service.Helpers;
 using TaskAnalysis.Service.LangChainService;
@@ -19,22 +21,23 @@ namespace TaskAnalysis.API.Extesions
             //ASP.NET Core otomatik olarak Scoped lifetime ile kaydediyor.
         }
         public static void AddCsvTaskReaders(this IServiceCollection services) =>
-    services.AddScoped<ICsvReaderService, CsvTaskReaders>();
+            services.AddScoped<ICsvReaderService, CsvTaskReaders>();
 
         public static void AddRetrievalService(this IServiceCollection services) =>
-services.AddScoped<IRetrievalService, RetrievalService>();
+            services.AddScoped<IRetrievalService, RetrievalService>();
         
         public static void AddEmbeddingService(this IServiceCollection services) =>
-services.AddScoped<IEmbeddingService, EmbeddingService>();
+            services.AddScoped<IEmbeddingService, EmbeddingService>();
 
         public static void AddEmbeddingHelperService(this IServiceCollection services) =>
-services.AddScoped<IEmbeddingHelperService, EmbeddingHelperService>();
+            services.AddScoped<IEmbeddingHelperService, EmbeddingHelperService>();
 
         public static void AddAnalysisService(this IServiceCollection services) =>
-services.AddScoped<IAnalysisService, AnalysisService>();
+            services.AddScoped<IAnalysisService, AnalysisService>();
 
         public static void AddVectorDbService(this IServiceCollection services) =>
-services.AddSingleton<IVectorDbService, VectorDbService>();
+            services.AddSingleton<IVectorDbService, VectorDbService>();
+      
         /*builder.Services.AddScoped<IVectorDbService, VectorDbService>(); Indexlemeyi her seferinde oluşturduğu için AddScoped her yerine  AddSingleton kuyllandım
         //builder.Services.AddSingleton<IVectorDbService, VectorDbService>(); //Indexlemeyi her seferinde oluşturduğu için AddScoped yerine AddSingleton kuyllandım
         /*Tür	             Davranış
@@ -47,9 +50,12 @@ services.AddSingleton<IVectorDbService, VectorDbService>();
 
         public static void AddTaskExtractionService(this IServiceCollection services) => 
             services.AddScoped<ITaskExtractionService, TaskExtractionService>();
+       
+        public static void AddCsvReadersHelper(this IServiceCollection services) =>
+            services.AddScoped<ICsvReadersHelper, CsvReadersHelper>();
 
         public static void AddResponsiblePersonMatcherService(this IServiceCollection services) =>
-services.AddScoped<IResponsiblePersonMatcherService, ResponsiblePersonMatcherService>();
+            services.AddScoped<IResponsiblePersonMatcherService, ResponsiblePersonMatcherService>();
 
         public static void AddPolicy(this IServiceCollection services)
         {

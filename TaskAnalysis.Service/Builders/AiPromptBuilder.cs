@@ -363,7 +363,9 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         {
             sb.AppendLine($"{i + 1}. {tasks[i]}");
         }
-
+        sb.AppendLine("- IMPORTANT: For each chunk of records, extract ALL individual tasks mentioned in AnaSorumluluk fields.");
+        sb.AppendLine("- Each numbered item in AnaSorumluluk is a separate task. Extract them individually.");
+        sb.AppendLine("- Do not summarize multiple tasks into one. Return one JSON object per task.");
         sb.AppendLine();
         sb.AppendLine("Return JSON array exactly in this schema:");
         sb.AppendLine("""
@@ -372,6 +374,7 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
     "department": "Department name",
     "originalTask": "Original task text",
     "taskSummary": "Short clear Turkish summary of the task",
+    "bestSolution": "AI, RPA, Hybrid, or another suitable solution type",
     "aiSupportRate": 0,
     "projectIdea": "One concrete AI/RPA/automation project idea for this task",
     "similarProjectName": "Similar real product/project name or Not Found",

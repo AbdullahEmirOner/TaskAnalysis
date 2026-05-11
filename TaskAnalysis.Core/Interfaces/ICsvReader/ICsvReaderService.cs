@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TaskAnalysis.Core.Entities.CSVEntities;
 
-namespace TaskAnalysis.Core.Interfaces
+namespace TaskAnalysis.Core.Interfaces.ICsvReader
 {
     public interface ICsvReaderService
     {

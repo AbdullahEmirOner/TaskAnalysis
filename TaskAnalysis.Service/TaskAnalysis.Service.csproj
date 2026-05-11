@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TaskAnalysis.Core\TaskAnalysis.Core.csproj" />
+    <ProjectReference Include="..\TaskAnalysis.Share\TaskAnalysis.Share.csproj" />
   </ItemGroup>
 
 </Project>

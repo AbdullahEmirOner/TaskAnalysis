@@ -2,12 +2,20 @@
 using CsvHelper.Configuration;
 using System.Globalization;
 using TaskAnalysis.Core.Entities.CSVEntities;
-using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.ICsvReader;
 
 namespace OTOKAR.TaskAnalysis.DAL.Readers
 {
+
     public class CsvTaskReaders : ICsvReaderService
     {
+        private readonly ICsvReadersHelper _csvReadersHelper;
+
+        public CsvTaskReaders(ICsvReadersHelper csvReadersHelper)
+        {
+            _csvReadersHelper = csvReadersHelper;
+        }
+
         public List<TaskRecord> ReadAllCsv(string folderPath)
         {
             if(string.IsNullOrWhiteSpace(folderPath))
@@ -36,7 +44,7 @@ namespace OTOKAR.TaskAnalysis.DAL.Readers
             foreach (var file in files)
             {
                 var sourceFile = Path.GetFileName(file);
-                var direktorluk = GetDirektorlukFromFileName(sourceFile);
+                var direktorluk = _csvReadersHelper.GetDirektorlukFromFileName(sourceFile);
 
                 using var reader = new StreamReader(file);  //StreamReader, dosyadaki metinleri satır satır veya komple okumanı sağlar.
                 // using python'daki wait gibi, dosyayı açar kapar tektek yazmamız gerekmez
@@ -117,34 +125,13 @@ namespace OTOKAR.TaskAnalysis.DAL.Readers
                         SourceFile = sourceFile
                     };
 
-                    if (IsMeaningful(record))
+                    if (_csvReadersHelper.IsMeaningful(record))
                     {
                         allRecord.Add(record);
                     }
                 }
             }
             return allRecord;
-        }
-
-        private static bool IsMeaningful(TaskRecord record)
-        {
-            if (string.IsNullOrWhiteSpace(record.AnaSorumluluk))
-            {
-                return false;
-            }
-            return !string.IsNullOrWhiteSpace(record.Mudurluk)
-                || !string.IsNullOrWhiteSpace(record.Yetki)
-                || !string.IsNullOrWhiteSpace(record.Amac);
-        }
-
-        private static string GetDirektorlukFromFileName(string fileName) // --> Dosya adını okunabilir bir direktörlük adı haline getiriyor.
-        {
-            var name = Path.GetFileNameWithoutExtension(fileName);
-
-            return name
-                .Replace("_", " ")
-                .Replace("-", " ")
-                .Trim();
         }
 
         public List<TaskRecord> ReadCsv(string filePath)
@@ -157,7 +144,7 @@ namespace OTOKAR.TaskAnalysis.DAL.Readers
 
             var allRecord = new List<TaskRecord>();
             var sourceFile = Path.GetFileName(filePath);
-            var direktorluk = GetDirektorlukFromFileName(sourceFile);
+            var direktorluk = _csvReadersHelper.GetDirektorlukFromFileName(sourceFile);
 
             using var reader = new StreamReader(filePath);
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -186,7 +173,7 @@ namespace OTOKAR.TaskAnalysis.DAL.Readers
                     SourceFile = sourceFile
                 };
 
-                if (IsMeaningful(record))
+                if (_csvReadersHelper.IsMeaningful(record))
                 {
                     allRecord.Add(record);
                 }
@@ -194,7 +181,6 @@ namespace OTOKAR.TaskAnalysis.DAL.Readers
 
             return allRecord;
         }
-
     }
 }
 

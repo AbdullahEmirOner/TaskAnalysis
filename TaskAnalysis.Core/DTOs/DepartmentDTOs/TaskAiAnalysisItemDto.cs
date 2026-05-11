@@ -19,6 +19,8 @@ namespace TaskAnalysis.Core.DTOs.DepartmentDTOs
 
         public int AiSupportRate { get; set; }
 
+        public string BestSolution { get; set; } = string.Empty;
+
         public string ProjectIdea { get; set; } = string.Empty;
 
         public string SimilarProjectName { get; set; } = string.Empty;

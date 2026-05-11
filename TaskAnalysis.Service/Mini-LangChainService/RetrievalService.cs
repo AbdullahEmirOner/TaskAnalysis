@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TaskAnalysis.Core.Entities.CSVEntities;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.ICsvReader;
 using TaskAnalysis.Core.Interfaces.IRAG;
 
 namespace TaskAnalysis.Service.Mini_LangChainService
