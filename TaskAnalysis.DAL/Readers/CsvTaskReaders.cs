@@ -1,7 +1,7 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
-using TaskAnalysis.Core.Entities;
+using TaskAnalysis.Core.Entities.CSVEntities;
 using TaskAnalysis.Core.Interfaces;
 
 namespace OTOKAR.TaskAnalysis.DAL.Readers

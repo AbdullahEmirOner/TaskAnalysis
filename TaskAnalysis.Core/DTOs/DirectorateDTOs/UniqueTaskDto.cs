@@ -1,4 +1,4 @@
-﻿namespace TaskAnalysis.Core.DTOs
+﻿namespace TaskAnalysis.Core.DTOs.DirectorateDTOs
 {
     public class UniqueTaskDto
     {

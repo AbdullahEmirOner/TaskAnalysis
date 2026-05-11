@@ -1,5 +1,5 @@
 ﻿using TaskAnalysis.Core.DTOs.AIDTOs;
-using TaskAnalysis.Core.Entities;
+using TaskAnalysis.Core.Entities.CSVEntities;
 
 public interface IResponsiblePersonMatcherService
 {

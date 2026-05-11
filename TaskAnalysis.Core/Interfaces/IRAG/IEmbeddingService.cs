@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace TaskAnalysis.Core.Interfaces;
+namespace TaskAnalysis.Core.Interfaces.IRAG;
 
 public interface IEmbeddingService
 {

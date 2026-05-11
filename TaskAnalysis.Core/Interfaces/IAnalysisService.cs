@@ -2,7 +2,7 @@
 using TaskAnalysis.Core.DTOs.ChatbotDTOs;
 using TaskAnalysis.Core.DTOs.DirectorateDTOs;
 using TaskAnalysis.Core.DTOs.PersonDTOs;
-using TaskAnalysis.Core.Entities;
+using TaskAnalysis.Core.Entities.CSVEntities;
 
 namespace TaskAnalysis.Core.Interfaces
 {

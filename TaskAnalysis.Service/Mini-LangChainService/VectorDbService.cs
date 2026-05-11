@@ -1,5 +1,5 @@
-﻿using TaskAnalysis.Core.DTOs;
-using TaskAnalysis.Core.Interfaces;
+﻿using TaskAnalysis.Core.DTOs.RAGDTOs;
+using TaskAnalysis.Core.Interfaces.IRAG;
 
 namespace TaskAnalysis.Service.LangChainService;
 

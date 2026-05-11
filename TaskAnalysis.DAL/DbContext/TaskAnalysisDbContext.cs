@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskAnalysis.Core.Entities;
-using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Entities.RecordEntities;
+using TaskAnalysis.Core.Interfaces.IDbContext;
 
 namespace TaskAnalysis.DAL.DbContext
 {

@@ -8,6 +8,8 @@ using TaskAnalysis.Core.DTOs.ChatbotDTOs;
 using TaskAnalysis.Core.DTOs.DepartmentDTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.IDbContext;
+using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.Service.Builders;
 
 namespace TaskAnalysis.API.Controllers;

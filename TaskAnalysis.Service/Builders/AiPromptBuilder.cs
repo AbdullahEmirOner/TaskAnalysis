@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using TaskAnalysis.Core.DTOs;
+using TaskAnalysis.Core.DTOs.DirectorateDTOs;
 
 namespace TaskAnalysis.Service.Builders;
 

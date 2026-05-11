@@ -1,4 +1,4 @@
-﻿using TaskAnalysis.Core.Interfaces;
+﻿using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.Service.Helpers;
 //namespace TaskAnalysis.Service.LangChainService;
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OTOKAR.TaskAnalysis.DAL.Readers;
 using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.DAL.DbContext;
 using TaskAnalysis.Service.AIService;
 using TaskAnalysis.Service.Helpers;

@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using TaskAnalysis.Core.DTOs.DepartmentDTOs;
-using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.IRAG;
 
 namespace TaskAnalysis.Service.Helpers
 {

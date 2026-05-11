@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskAnalysis.Core.Entities;
+using TaskAnalysis.Core.Entities.RecordEntities;
 
-namespace TaskAnalysis.Core.Interfaces
+namespace TaskAnalysis.Core.Interfaces.IDbContext
 {
     public interface IApplicationDbContext
     {

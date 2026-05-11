@@ -1,5 +1,6 @@
 using TaskAnalysis.API.Extesions;
-using TaskAnalysis.Core.Interfaces;
+using TaskAnalysis.Core.Interfaces.IDbContext;
+using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.DAL.DbContext;
 
 

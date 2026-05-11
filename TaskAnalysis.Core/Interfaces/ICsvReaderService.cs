@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TaskAnalysis.Core.Entities;
+using TaskAnalysis.Core.Entities.CSVEntities;
 
 namespace TaskAnalysis.Core.Interfaces
 {
