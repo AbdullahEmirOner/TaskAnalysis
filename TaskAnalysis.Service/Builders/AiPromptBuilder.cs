@@ -299,6 +299,8 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         sb.AppendLine("- AiAutomationRate ve AverageAiAutomationRate 0 ile 100 arasında integer olmalı.");
         sb.AppendLine("- BestSolution değerleri şunlardan biri olabilir: AI, RPA, AI + RPA, Dashboard, Manuel, Hibrit.");
         sb.AppendLine("- Emin değilsen düşük değil makul oran ver.");
+        sb.AppendLine("- Önerdiğin bir proje fikri somut ve uygulanabilir olmalı.");
+        sb.AppendLine("- Önerdiğin bir proje fikrine uygun bir link ver: projectLink");
         sb.AppendLine("- Görevleri mümkün olduğunca ayrı ayrı analiz et.");
         sb.AppendLine();
         sb.AppendLine("Çalışan Bilgileri:");
@@ -334,7 +336,8 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
       "aiAutomationRate": 0,
       "bestSolution": "string",
       "recommendation": "string",
-      "projectIdea": "string"
+      "projectIdea": "string",
+      "projectLink" : "string"
     }
   ]
 }

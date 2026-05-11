@@ -17,6 +17,8 @@ namespace TaskAnalysis.Core.DTOs
         public string Recommendation { get; set; } = string.Empty;
 
         public string ProjectIdea { get; set; } = string.Empty;
+
+        public string ProjectLink { get; set; } = string.Empty;
     }
 
 }
