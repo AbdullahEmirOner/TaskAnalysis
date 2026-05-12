@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using TaskAnalysis.Core.Interfaces;
 
-namespace TaskAnalysis.Service.Services
+namespace TaskAnalysis.Service.Services // BU sınıfın amacı birebir aynı görevleri tekilleştirmek; ama asıl işi metin içinden görevleri ayıklamak
 {
     public class TaskExtractionService : ITaskExtractionService
     {

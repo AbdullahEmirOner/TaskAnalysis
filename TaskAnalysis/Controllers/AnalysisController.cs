@@ -68,6 +68,7 @@ public class AnalysisController : ControllerBase
         return Ok(records);
     }
 
+
     [HttpGet("summary")]
     public IActionResult GetSummary()
     {
@@ -82,9 +83,19 @@ public class AnalysisController : ControllerBase
         return Ok(summaries);
     }
 
+
     [HttpGet("chatbot-context")]
     public IActionResult GetChatbotContext()
-    {
+    { /* Bu endpoint sadece chatbot için genel bir context döndürüyor. Soru-cevap kısmında bu context'ten ilgili bilgileri çekip kullanacağız.
+       Eğer context oluşturma işlemi çok uzun sürerse, burada da cache mekanizması ekleyebiliriz.
+       Ancak şu an için her seferinde güncel verilerle context oluşturmak istiyoruz.
+       İleride gerekirse, örneğin günde bir kez güncellenen bir cache mekanizması ekleyebiliriz.
+       Cache anahtarı olarak "chatbot-context" gibi sabit bir değer kullanabiliriz.
+       Cache süresi olarak da 24 saat gibi uzun bir süre belirleyebiliriz, çünkü direktörlük görevleri günlük olarak değişmez.
+       Ancak şu an için cache mekanizması eklemiyoruz, her seferinde güncel verilerle context oluşturacağız.
+       Bu sayede, CSV dosyalarına yapılan herhangi bir güncelleme anında chatbot'un context'ine yansıyacak.
+       ------------------------ Es cümle tamamı ile denem amaçlı yazılmış güncel çıktılara hiçbir etkisi olmayan bir endpointtir, ileride kaldırılabilir ------------------------*/
+
         var folderPath = _configuration["CsvSettings:FolderPath"];
 
         if (string.IsNullOrWhiteSpace(folderPath))
@@ -96,6 +107,7 @@ public class AnalysisController : ControllerBase
 
         return Ok(chatbotContext);
     }
+
 
     [HttpGet("ai-analysis/{directorate}")]
     public async Task<IActionResult> GetAiAnalysis(string directorate, [FromQuery] string? department)
@@ -263,9 +275,10 @@ public class AnalysisController : ControllerBase
         }
     }
 
+
     [HttpGet("ai-unique-tasks")]
-    public async Task<IActionResult> GetAiUniqueTasks()
-        {
+    public async Task<IActionResult> GetAiUniqueTasks() // Kullanım dışı token yetmez :) ;P 
+    {
             var cacheKey = $"ai-unique-tasks"; // Validation Model olarak düzeltielecek kod tekrarı azaltılacak
 
             if (_cache.TryGetValue(cacheKey, out var cachedResult))
@@ -308,6 +321,7 @@ public class AnalysisController : ControllerBase
             }
         }
 
+
     [HttpPost("chatbot-ask")]
     public async Task<IActionResult> Ask([FromBody] ChatbotQuestionDto request)
         {
@@ -322,12 +336,14 @@ public class AnalysisController : ControllerBase
             }
         }
 
+
     [HttpPost("index-csv")]
     public async Task<IActionResult> IndexCsv([FromQuery] string fileName)
         {
             var result = await _retrieval.IndexCsvAsync(fileName);
             return Ok(result);
         }
+
 
     [HttpPost("index-all-csv")]
     public async Task<IActionResult> IndexAllCsv()
@@ -336,6 +352,7 @@ public class AnalysisController : ControllerBase
             return Ok(result);
         }
 
+
     [HttpGet("person/{sicilNo}/ai-analysis")]
     public async Task<IActionResult> AnalyzePersonBySicilNo(string sicilNo)
         {
@@ -343,6 +360,7 @@ public class AnalysisController : ControllerBase
 
             return Ok(result);
         }
+
 
     [HttpGet("directorate/{directorate}/tasks/ai-analysis")]
     public async Task<IActionResult> AnalyzeDirectorateTasks(string directorate)
@@ -487,7 +505,8 @@ public class AnalysisController : ControllerBase
         }
     }
 
-    private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
+
+ /* private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
     {
         try
         {
@@ -520,7 +539,7 @@ public class AnalysisController : ControllerBase
         {
             return new();
         }
-    }
+    }*/
   
     /* [HttpGet("ai-mock-analysis")]
         public IActionResult GetAiAnalysis()

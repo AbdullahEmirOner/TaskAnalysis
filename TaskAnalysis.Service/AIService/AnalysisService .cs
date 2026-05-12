@@ -35,6 +35,7 @@ public class AnalysisService : IAnalysisService
     private readonly IVectorDbService _vectorDb;
     private readonly IApplicationDbContext _context;
     private readonly ITaskExtractionService _taskExtractionService;
+
     public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService, ITaskExtractionService taskExtractionService,
         ICsvReaderService csvReaderService, IEmbeddingHelperService embeddingHelperService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context, IParseHeleprService parseHeleprService)
     {
@@ -50,7 +51,7 @@ public class AnalysisService : IAnalysisService
         _taskExtractionService = taskExtractionService;
         _parseHeleprService = parseHeleprService;
     }
-   
+
     public List<DirectorateSummaryDto> BuildDirectoraterSummaries(List<TaskRecord> records)
     {
         if (records == null || records.Count == 0)
@@ -225,7 +226,7 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
-   /* public List<TaskRecord> GetRelevantRecords(List<TaskRecord> records, string question, int maxCount = 50) // SearchAsync / SearchAllAsync  mantıksal benzerlik var düzeltilmeli
+    /* public List<TaskRecord> GetRelevantRecords(List<TaskRecord> records, string question, int maxCount = 50) // SearchAsync / SearchAllAsync  mantıksal benzerlik var düzeltilmeli
     { /* Elindeki TaskRecord listesi içinden bir soruya en uygun kayıtları seçiyor.
         Yani “keyword‑bazlı filtreleme ve sıralama” yapıyor
        
@@ -363,9 +364,7 @@ public class AnalysisService : IAnalysisService
                 $"Ana Sorumluluk: {x.AnaSorumluluk}")
             .ToList();
 
-        var analysisQuestion =
-            "Bu çalışanın görevlerinin AI ile yapılabilirlik oranını analiz et. " +
-            "Her görev için AI otomasyon yüzdesi, çözüm tipi, öneri ve proje fikri üret.";
+        var analysisQuestion = "Bu çalışanın görevlerinin AI ile yapılabilirlik oranını analiz et. " + "Her görev için AI otomasyon yüzdesi, çözüm tipi, öneri ve proje fikri üret.";
 
         var questionEmbedding = await _embeddingService.CreateEmbeddingAsync(analysisQuestion);
 
@@ -386,12 +385,7 @@ public class AnalysisService : IAnalysisService
             .Select(x => x.Text)
             .ToList();
 
-        var prompt = AiPromptBuilder.BuildPersonAiAnalysisPrompt(
-            sicilNo,
-            fullName,
-            birim,
-            mudurluk,
-            relevantChunks);
+        var prompt = AiPromptBuilder.BuildPersonAiAnalysisPrompt( sicilNo, fullName, birim, mudurluk, relevantChunks);
 
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
