@@ -60,19 +60,19 @@ public class AnalysisService : IAnalysisService
         }
 
         var result = records
-        .GroupBy(x => x.Birim)
+        .GroupBy(x => x.Birim) // records listesini Birim değerine göre kutulara ayırır.
         .Select(dg => new DirectorateSummaryDto
         {
             Direktorluk = dg.Key,
             ToplamKayitSayisi = dg.Count(),
             MudurlukSayisi = dg
-        .Select(x => x.Mudurluk)
-        .Where(x => !string.IsNullOrWhiteSpace(x))
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .Count(),
+        .Select(x => x.Mudurluk) // Her kaydın Müdürlük bilgisini alır.
+        .Where(x => !string.IsNullOrWhiteSpace(x)) // Bura Müdürlük bilgisi boş olmayan kayıtları alır.
+        .Distinct(StringComparer.OrdinalIgnoreCase) // Müdürlük isimlerini büyük küçük harf duyarsız olarak benzersiz hale getirir.
+        .Count(), // Müdürlük sayısını hesaplar
 
-            Mudurlukler = dg
-        .GroupBy(x => x.Mudurluk)
+            Mudurlukler = dg // Direktörlüğün içinde müdürlüklere göre grupla
+        .GroupBy(x => x.Mudurluk) // 
         .Select(mg => new DepartmentSummaryDto
         {
             Mudurluk = mg.Key,
@@ -148,10 +148,12 @@ public class AnalysisService : IAnalysisService
            };
        }*/
 
-    public string BuildChatbotContext(List<DirectorateSummaryDto> summaries)
-    { /* BuildChatbotContext senin LLM’e vereceğin context stringini hazırlıyor.
-       Bu sayede model, şirket görev analizini yaparken düzgün bir formatta veri görüyor.
-       */
+    public string BuildChatbotContext(List<DirectorateSummaryDto> summaries) 
+    { 
+      /* BuildChatbotContext senin LLM’e vereceğin context stringini hazırlıyor.
+      Bu sayede model, şirket görev analizini yaparken düzgün bir formatta veri görüyor.
+      */
+
         if (summaries == null || summaries.Count == 0)
             return "Analiz edilecek veri bulunamadı.";
 
@@ -194,11 +196,18 @@ public class AnalysisService : IAnalysisService
         return sb.ToString();
     }
 
-    public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries)
+    public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries) // Farklı müdürlüklerde aynı görevler tek bir görev olarak listeleniyor ama aynı yazılması gerekiyor 
     { /* BuildUniqueTask
        Şirket görev özetlerinden (DirectorateSummaryDto) çıkarılan benzersiz görevleri (UniqueTaskDto) üretmeni sağlıyor.
        Yani aynı sorumluluk farklı müdürlüklerde geçse bile tek bir görev olarak listeleniyor
+
+            ******Aynı görevler tek satırda birleşiyor.******
+
+            Görev adı bir kez yazılıyor.
+
+            O görevin geçtiği tüm müdürlükler listeleniyor.
       */
+
         if (summaries == null || summaries.Count == 0)
             return new List<UniqueTaskDto>();
 
@@ -210,7 +219,7 @@ public class AnalysisService : IAnalysisService
                 Department = m.Mudurluk
             }))
             .Where(x => !string.IsNullOrWhiteSpace(x.Task))
-            .GroupBy(x => x.Task.Trim(), StringComparer.OrdinalIgnoreCase)
+            .GroupBy(x => x.Task.Trim(), StringComparer.OrdinalIgnoreCase) // Görev adı kırpılıp (trim) büyük/küçük harf duyarsız şekilde gruplanıyor. Yani aynı görev farklı yazılsa bile (ör. “Rapor Hazırlama” vs “rapor hazırlama”) aynı gruba giriyor.
             .Select(g => new UniqueTaskDto
             {
                 Task = g.First().Task,
@@ -267,6 +276,7 @@ public class AnalysisService : IAnalysisService
 
         return scoredRecords;
     }*/
+   
     public async Task<string> AskQuestionAsync(ChatbotQuestionDto request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question))
@@ -297,7 +307,7 @@ public class AnalysisService : IAnalysisService
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
         return aiResponse;
-    }
+    } // En önemli fonksiyoooon !!!!
 
     public async Task<PersonAiAnalysisDto> AnalyzePersonBySicilNoAsync(string sicilNo)
     {
@@ -418,121 +428,119 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
-// -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-   
-    public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(
-        string directorate,
-        int chunkSize = 200)
-    {
-        if (string.IsNullOrWhiteSpace(directorate))
-            throw new ArgumentException("Direktörlük boş olamaz.");
+    /*   public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200)
+     { // Bu metodu yazma sebebim --> Kullanmadım 😒
+    
+       // Görevleri sadece birebir aynı yazılanlara göre değil, semantik benzerliklerine göre tekilleştirmek.
+       
+       // AI analizini ölçeklenebilir hale getirmek (chunking sayesinde).
+        
+       // Departman bazlı görev analizi DTO’su üretmek ve üst seviyede direktörlük için özet çıkarmak.
+       
+       // Yani bu, önceki “aynı görevleri grupla” mantığının hafıza indeksli ve AI destekli versiyonu.
 
-        directorate = directorate.Trim();
+         if (string.IsNullOrWhiteSpace(directorate))
+             throw new ArgumentException("Direktörlük boş olamaz.");
 
-        var folderPath = _configuration["CsvSettings:FolderPath"];
+         directorate = directorate.Trim();
 
-        if (string.IsNullOrWhiteSpace(folderPath))
-            throw new Exception("CSV klasör yolu bulunamadı.");
+         var folderPath = _configuration["CsvSettings:FolderPath"];
 
-        var allRecords = _csvReaderService.ReadAllCsv(folderPath);
+         if (string.IsNullOrWhiteSpace(folderPath))
+             throw new Exception("CSV klasör yolu bulunamadı.");
 
-        var directorateRecords = allRecords
-            .Where(x =>
-                !string.IsNullOrWhiteSpace(x.Birim) &&
-                x.Birim.Equals(directorate, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+         var allRecords = _csvReaderService.ReadAllCsv(folderPath);
 
-        if (!directorateRecords.Any())
-        {
-            return new DirectorateTaskAnalysisDto
-            {
-                Directorate = directorate
-            };
-        }
+         var directorateRecords = allRecords
+             .Where(x =>
+                 !string.IsNullOrWhiteSpace(x.Birim) &&
+                 x.Birim.Equals(directorate, StringComparison.OrdinalIgnoreCase))
+             .ToList();
 
-        var result = new DirectorateTaskAnalysisDto
-        {
-            Directorate = directorate
-        };
+         if (!directorateRecords.Any())
+         {
+             return new DirectorateTaskAnalysisDto
+             {
+                 Directorate = directorate
+             };
+         }
 
-        var groupedDepartments = directorateRecords
-            .Where(x => !string.IsNullOrWhiteSpace(x.Mudurluk))
-            .GroupBy(x => x.Mudurluk!)
-            .ToList();
+         var result = new DirectorateTaskAnalysisDto
+         {
+             Directorate = directorate
+         };
 
-        result.DepartmentCount = groupedDepartments.Count;
+         var groupedDepartments = directorateRecords
+             .Where(x => !string.IsNullOrWhiteSpace(x.Mudurluk))
+             .GroupBy(x => x.Mudurluk!)
+             .ToList();
 
-        foreach (var departmentGroup in groupedDepartments)
-        {
-            var departmentName = departmentGroup.Key;
+         result.DepartmentCount = groupedDepartments.Count;
 
-            var extractedTasks = new List<string>();
+         foreach (var departmentGroup in groupedDepartments)
+         {
+             var departmentName = departmentGroup.Key;
 
-            foreach (var record in departmentGroup)
-            {
-                var tasks =
-                    _taskExtractionService.ExtractTasks(record.AnaSorumluluk);
+             var extractedTasks = new List<string>();
 
-                extractedTasks.AddRange(tasks);
-            }
+             foreach (var record in departmentGroup)
+             {
+                 var tasks =
+                     _taskExtractionService.ExtractTasks(record.AnaSorumluluk);
 
-            extractedTasks = extractedTasks
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToList();
+                 extractedTasks.AddRange(tasks);
+             }
 
-            var uniqueTasks = await DeduplicateTasksWithMemoryEmbeddingAsync(
-                directorate,
-                departmentName,
-                extractedTasks);
+             extractedTasks = extractedTasks
+                 .Where(x => !string.IsNullOrWhiteSpace(x))
+                 .ToList();
 
-            var departmentDto = new DepartmentTaskAnalysisDto
-            {
-                Department = departmentName,
-                OriginalTaskCount = extractedTasks.Count,
-                UniqueTaskCount = uniqueTasks.Count
-            };
-            var safeChunkSize = chunkSize <= 0 ? 200 : chunkSize;
+             var uniqueTasks = await DeduplicateTasksWithMemoryEmbeddingAsync(
+                 directorate,
+                 departmentName,
+                 extractedTasks);
 
-            var taskChunks = uniqueTasks
-                .Select((task, index) => new { task, index })
-                .GroupBy(x => x.index / safeChunkSize)
-                .Select(g => g.Select(x => x.task).ToList())
-                .ToList();
+             var departmentDto = new DepartmentTaskAnalysisDto
+             {
+                 Department = departmentName,
+                 OriginalTaskCount = extractedTasks.Count,
+                 UniqueTaskCount = uniqueTasks.Count
+             };
+             var safeChunkSize = chunkSize <= 0 ? 200 : chunkSize;
 
-            foreach (var chunk in taskChunks)
-            {
-                var prompt = AiPromptBuilder.BuildTaskChunkAnalysisPrompt(
-                    directorate,
-                    departmentName,
-                    chunk);
+             var taskChunks = uniqueTasks
+                 .Select((task, index) => new { task, index })
+                 .GroupBy(x => x.index / safeChunkSize)
+                 .Select(g => g.Select(x => x.task).ToList())
+                 .ToList();
 
-                var aiResponse = await _aiService.AnalyzeAsync(prompt);
+             foreach (var chunk in taskChunks)
+             {
+                 var prompt = AiPromptBuilder.BuildTaskChunkAnalysisPrompt(
+                     directorate,
+                     departmentName,
+                     chunk);
 
-                var parsedTasks = ParseTaskAnalysisItems(aiResponse);
+                 var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
-                departmentDto.Tasks.AddRange(parsedTasks);
-            }
+                 var parsedTasks = ParseTaskAnalysisItems(aiResponse);
 
-            result.Departments.Add(departmentDto);
-        }
+                 departmentDto.Tasks.AddRange(parsedTasks);
+             }
 
-        result.OriginalTaskCount =
-            result.Departments.Sum(x => x.OriginalTaskCount);
+             result.Departments.Add(departmentDto);
+         }
 
-        result.UniqueTaskCount =
-            result.Departments.Sum(x => x.UniqueTaskCount);
+         result.OriginalTaskCount =
+             result.Departments.Sum(x => x.OriginalTaskCount);
 
-        return result;
-    }
+         result.UniqueTaskCount =
+             result.Departments.Sum(x => x.UniqueTaskCount);
 
-    private async Task<List<string>> DeduplicateTasksWithMemoryEmbeddingAsync(string directorate, string department, List<string> tasks)
+         return result;
+     }*/
+
+    /* private async Task<List<string>> DeduplicateTasksWithMemoryEmbeddingAsync(string directorate, string department, List<string> tasks)
     {
         var memoryIndex = new List<MemoryTaskIndexItemDto>();
 
@@ -574,9 +582,9 @@ public class AnalysisService : IAnalysisService
         }
 
         return uniqueTasks;
-    }
+    }*/
 
-    private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
+    /*private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse) // Bu metodun amacı: AI’den gelen JSON cevabını temizleyip parse etmek.
     {
         try
         {
@@ -611,5 +619,5 @@ public class AnalysisService : IAnalysisService
         {
             return new();
         }
-    }
+    }*/
 }

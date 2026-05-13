@@ -16,6 +16,7 @@ using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.Service.Builders;
 
 namespace TaskAnalysis.API.Controllers;
+
 //------------------------------------------------- CRUD işlemleri maalesef burada oluyor refactoring yapılmalı (Katmanlar iç içe girmiş durumda) --------------------------------------------------------------
 //--------------------------------------------- Direktorlükler için service katmanında yeni fonksiyon yazılmalı !!! ve service katmanı da parçalnmalı ----------------------------------------------------------
 
@@ -34,7 +35,9 @@ public class AnalysisController : ControllerBase
     private readonly IAiService _aiService;
     private readonly IApplicationDbContext _context;
 
-    public AnalysisController(ICsvReaderService csvReaderService, IAnalysisService analysisService, IConfiguration configuration, 
+    public AnalysisController(ICsvReaderService csvReaderService,
+    IAnalysisService analysisService,
+    IConfiguration configuration, 
     IAiService aiService,
     IMemoryCache cache,
     IEmbeddingHelperService embeddingHelperService,
@@ -506,7 +509,7 @@ public class AnalysisController : ControllerBase
     }
 
 
- /* private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
+    private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
     {
         try
         {
@@ -539,8 +542,9 @@ public class AnalysisController : ControllerBase
         {
             return new();
         }
-    }*/
+    }
   
+
     /* [HttpGet("ai-mock-analysis")]
         public IActionResult GetAiAnalysis()
         {

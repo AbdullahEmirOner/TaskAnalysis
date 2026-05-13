@@ -177,108 +177,7 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
     }  
 
     /* BuildDepartmentChunkAnalysisPrompt → Kullanıcı sorusu yok, sadece görev kayıtlarını analiz edip kısa özet çıkarıyor. 
-       Yani bir “analiz raporu” senaryosu.
-    */
-    
-    public static string BuildFinalDepartmentAnalysisPrompt( IEnumerable<string> partialAnalyses, string directorate, string? department)
-    {
-        var sb = new StringBuilder();
-
-        sb.AppendLine("You are an expert corporate AI automation analyst.");
-        sb.AppendLine("Your job is to merge partial task analyses and produce ONE final department-level AI automation analysis.");
-        sb.AppendLine();
-        sb.AppendLine("CRITICAL OUTPUT RULES:");
-        sb.AppendLine("- Return ONLY one valid JSON object.");
-        sb.AppendLine("- Do NOT use Markdown.");
-        sb.AppendLine("- Do NOT use ```json.");
-        sb.AppendLine("- Do NOT add explanations outside JSON.");
-        sb.AppendLine("- Do NOT nest JSON inside string fields.");
-        sb.AppendLine("- All property names must exactly match the schema.");
-        sb.AppendLine("- recommendation must be plain text only.");
-        sb.AppendLine("- projectIdeas MUST be a JSON array.");
-        sb.AppendLine("- projectIdeas MUST NOT be empty.");
-        sb.AppendLine($"First, determine how many distinct tasks exist in the provided input.");
-        sb.AppendLine($"Then, you MUST generate exactly the same number of project ideas as the number of distinct tasks you identified.");
-        sb.AppendLine("There must be a strict one-to-one mapping:");
-        sb.AppendLine("- 1 task = 1 AI analysis");
-        sb.AppendLine("- 1 task = 1 project idea");
-        sb.AppendLine("- 1 task = 1 similar project name");
-        sb.AppendLine("- 1 task = 1 similar project link");
-        sb.AppendLine("Do NOT generate fewer or more project ideas than the task count.");
-        sb.AppendLine("- responsiblePeople MUST be a JSON array.");
-        sb.AppendLine("- responsiblePeople must contain unique people only.");
-        sb.AppendLine("- Do NOT repeat the same person twice.");
-        sb.AppendLine();
-
-        sb.AppendLine($"Directorate: {directorate}");
-
-        if (!string.IsNullOrWhiteSpace(department))
-            sb.AppendLine($"Department: {department}");
-
-        sb.AppendLine();
-        sb.AppendLine("JSON schema:");
-        sb.AppendLine("""
-{
-  "task": "Final summary of the directorate/department responsibilities",
-  "bestSolution": "AI, RPA, Hybrid, or another suitable solution type",
-  "automationRate": 0,
-  "recommendation": "Plain text final recommendation",
-  "projectIdeas": [
-    {
-      "task": "Concrete task/responsibility name",
-      "projectIdea": "Concrete automation or AI project idea",
-      "similarProjectName": "Similar real product/project name or Not Found",
-      "similarProjectLink": "https://... or Not Found"
-    }
-  ],
-  "responsiblePeople": [
-    {
-      "name": "Person name",
-      "department": "Person department",
-      "reason": "Why this person is relevant"
-    }
-  ]
-}
-""");
-        sb.AppendLine("CRITICAL: Do NOT summarize the whole department as one task.");
-        sb.AppendLine("CRITICAL: Split the responsibilities into separate distinct tasks.");
-        sb.AppendLine("CRITICAL: If you identify 8 tasks, projectIdeas must contain exactly 8 items.");
-        sb.AppendLine();
-        sb.AppendLine("FIELD RULES:");
-        sb.AppendLine("- Fill all fields.");
-        sb.AppendLine("- automationRate must be a number between 0 and 100.");
-        sb.AppendLine("- bestSolution must be AI, RPA, Hybrid, or a clearly named new solution type.");
-        sb.AppendLine("- task must summarize the department's real responsibilities.");
-        sb.AppendLine("- recommendation must explain what should be automated and why.");
-        sb.AppendLine("- projectIdeas must contain exactly 5 items.");
-        sb.AppendLine("- Every projectIdeas item must have task, projectIdea, similarProjectName, and similarProjectLink.");
-        sb.AppendLine("- projectIdeas must be generated from the task, recommendation, department context, and partial analyses.");
-        sb.AppendLine("- Even if partial analyses have empty projectIdeas, you MUST create 5 new concrete project ideas.");
-        sb.AppendLine("- Each project idea must be directly related to this department's responsibilities.");
-        sb.AppendLine("- Do NOT return [] for projectIdeas.");
-        sb.AppendLine("- If you cannot find a real similar project, write Not Found.");
-        sb.AppendLine("- responsiblePeople must include relevant people from partial analyses if available.");
-        sb.AppendLine("- If no responsible people are available, return an empty array.");
-        sb.AppendLine();
-
-        sb.AppendLine("PARTIAL ANALYSES:");
-        foreach (var part in partialAnalyses)
-        {
-            sb.AppendLine("-----");
-            sb.AppendLine(part);
-        }
-
-        sb.AppendLine();
-        sb.AppendLine("FINAL REMINDER:");
-        sb.AppendLine("Return ONLY valid JSON.");
-        sb.AppendLine("projectIdeas MUST contain exactly 5 items.");
-        sb.AppendLine("projectIdeas MUST NOT be empty.");
-        sb.AppendLine("Do not write any text before or after JSON.");
-
-        return sb.ToString();
-
-    }
-
+       Yani bir “analiz raporu” senaryosu.*/
     public static string BuildPersonAiAnalysisPrompt( string sicilNo, string fullName, string birim, string mudurluk, List<string> relevantChunks)
     {
         var sb = new StringBuilder();
@@ -345,6 +244,104 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
 
         return sb.ToString();
     }
+    
+    public static string BuildFinalDepartmentAnalysisPrompt( IEnumerable<string> partialAnalyses, string directorate, string? department)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("You are an expert corporate AI automation analyst.");
+        sb.AppendLine("Your job is to merge partial task analyses and produce ONE final department-level AI automation analysis.");
+        sb.AppendLine();
+        sb.AppendLine("CRITICAL OUTPUT RULES:");
+        sb.AppendLine("- Return ONLY one valid JSON object.");
+        sb.AppendLine("- Do NOT use Markdown.");
+        sb.AppendLine("- Do NOT use ```json.");
+        sb.AppendLine("- Do NOT add explanations outside JSON.");
+        sb.AppendLine("- Do NOT nest JSON inside string fields.");
+        sb.AppendLine("- All property names must exactly match the schema.");
+        sb.AppendLine("- recommendation must be plain text only.");
+        sb.AppendLine("- projectIdeas MUST be a JSON array.");
+        sb.AppendLine("- projectIdeas MUST NOT be empty.");
+        sb.AppendLine($"First, determine how many distinct tasks exist in the provided input.");
+        sb.AppendLine($"Then, you MUST generate exactly the same number of project ideas as the number of distinct tasks you identified.");
+        sb.AppendLine("There must be a strict one-to-one mapping:");
+        sb.AppendLine("- 1 task = 1 AI analysis");
+        sb.AppendLine("- 1 task = 1 project idea");
+        sb.AppendLine("- 1 task = 1 similar project name");
+        sb.AppendLine("- 1 task = 1 similar project link");
+        sb.AppendLine("Do NOT generate fewer or more project ideas than the task count.");
+        sb.AppendLine("- responsiblePeople MUST be a JSON array.");
+        sb.AppendLine("- responsiblePeople must contain unique people only.");
+        sb.AppendLine("- Do NOT repeat the same person twice.");
+        sb.AppendLine();
+
+        sb.AppendLine($"Directorate: {directorate}");
+
+        if (!string.IsNullOrWhiteSpace(department))
+            sb.AppendLine($"Department: {department}");
+
+        sb.AppendLine();
+        sb.AppendLine("JSON schema:");
+        sb.AppendLine("""
+        {
+        "task": "Final summary of the directorate/department responsibilities",
+        "bestSolution": "AI, RPA, Hybrid, or another suitable solution type",
+        "automationRate": 0,
+        "recommendation": "Plain text final recommendation",
+        "projectIdeas": [
+                      {
+                        "task": "Concrete task/responsibility name",
+                        "projectIdea": "Concrete automation or AI project idea",
+                        "similarProjectName": "Similar real product/project name or Not Found",
+                        "similarProjectLink": "https://... or Not Found"
+                     }
+                        ],
+        "responsiblePeople": [
+                    {
+                      "name": "Person name",
+                      "department": "Person department",
+                      "reason": "Why this person is relevant"
+                    }
+                            ]
+        }
+""");
+        sb.AppendLine("CRITICAL: Do NOT summarize the whole department as one task.");
+        sb.AppendLine("CRITICAL: Split the responsibilities into separate distinct tasks.");
+        sb.AppendLine("CRITICAL: If you identify 8 tasks, projectIdeas must contain exactly 8 items.");
+        sb.AppendLine();
+        sb.AppendLine("FIELD RULES:");
+        sb.AppendLine("- Fill all fields.");
+        sb.AppendLine("- automationRate must be a number between 0 and 100.");
+        sb.AppendLine("- bestSolution must be AI, RPA, Hybrid, or a clearly named new solution type.");
+        sb.AppendLine("- task must summarize the department's real responsibilities.");
+        sb.AppendLine("- recommendation must explain what should be automated and why.");
+        sb.AppendLine("- projectIdeas must contain exactly 5 items.");
+        sb.AppendLine("- Every projectIdeas item must have task, projectIdea, similarProjectName, and similarProjectLink.");
+        sb.AppendLine("- projectIdeas must be generated from the task, recommendation, department context, and partial analyses.");
+        sb.AppendLine("- Even if partial analyses have empty projectIdeas, you MUST create 5 new concrete project ideas.");
+        sb.AppendLine("- Each project idea must be directly related to this department's responsibilities.");
+        sb.AppendLine("- Do NOT return [] for projectIdeas.");
+        sb.AppendLine("- If you cannot find a real similar project, write Not Found.");
+        sb.AppendLine("- responsiblePeople must include relevant people from partial analyses if available.");
+        sb.AppendLine("- If no responsible people are available, return an empty array.");
+        sb.AppendLine();
+
+        sb.AppendLine("PARTIAL ANALYSES:");
+        foreach (var part in partialAnalyses)
+        {
+            sb.AppendLine("-----");
+            sb.AppendLine(part);
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("FINAL REMINDER:");
+        sb.AppendLine("Return ONLY valid JSON.");
+        sb.AppendLine("projectIdeas MUST contain exactly 5 items.");
+        sb.AppendLine("projectIdeas MUST NOT be empty.");
+        sb.AppendLine("Do not write any text before or after JSON.");
+
+        return sb.ToString();
+    }
 
     public static string BuildTaskChunkAnalysisPrompt( string directorate, string department, List<string> tasks)
     {
@@ -400,8 +397,46 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
     }
 
 }
+/* BuildTaskChunkAnalysisPrompt & BuildFinalDepartmentAnalysisPrompt
+ 🔗 Nasıl birlikte çalışıyorlar?
+BuildTaskChunkAnalysisPrompt  
+Bu fonksiyon, görevleri küçük parçalara (chunk) ayırıp AI’ye gönderiyor.
+
+Her görev için ayrı JSON objesi üretilmesini sağlıyor.
+
+Çıktı: Görev bazlı analizler (partial analyses).
+
+BuildFinalDepartmentAnalysisPrompt  
+Bu fonksiyon, chunk analizlerinden gelen parçalı sonuçları alıyor.
+
+Hepsini birleştirip tek bir departman seviyesi final JSON oluşturuyor.
+
+Çıktı: Departman için tek, bütünleşik analiz.
+
+📌 Özet Akış
+Görevler çıkarılır → chunk’lara bölünür.
+
+BuildTaskChunkAnalysisPrompt → AI’ye gönderilir → her görev için JSON döner.
+
+Bu JSON parçaları partialAnalyses listesine eklenir.
+
+BuildFinalDepartmentAnalysisPrompt → partialAnalyses’i alır → tek bir final JSON üretir.
+
+🎯 Amaç
+Chunk prompt → detaylı görev bazlı analiz.
+
+Final prompt → departman seviyesinde tek, temiz, kurallı JSON.
+
+Yani evet, bunlar ortak çalışıyor: biri görevleri analiz ediyor, diğeri bu analizleri birleştirip final rapora dönüştürüyor.
+
+👉 İstersen sana bu zinciri küçük bir örnekle gösterebilirim:
+
+Chunk prompt → 3 görev için ayrı JSON döner.
+
+Final prompt → bu 3 görevden tek bir departman analizi JSON üretir.
+ */
 /*Normalize → Unique → Chunk → Final → Chatbot  
- 
+
 Çalışma Akışı
 1. Normalize Tasks Prompt
 Fonksiyon: BuildNormalizeTasksPrompt
@@ -414,10 +449,10 @@ JSON formatında:
 
 json
 [
-  {
-    "task": "Fatura kontrolü",
-    "departments": ["Muhasebe", "Finans"]
-  }
+{
+"task": "Fatura kontrolü",
+"departments": ["Muhasebe", "Finans"]
+}
 ]
 Kullanım: İlk adımda görev listesi temizleniyor ve aynı anlamdaki görevler tek satırda toplanıyor.
 -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -432,17 +467,17 @@ JSON formatında, her görev için:
 
 json
 [
-  {
-    "task": "Fatura kontrolü",
-    "departments": ["Muhasebe"],
-    "bestSolution": "RPA",
-    "automationRate": 80,
-    "recommendation": "Fatura kontrolü için RPA önerilir.",
-    "projectIdea": "Otomatik fatura doğrulama sistemi",
-    "similarProjectName": "SAP Invoice Management",
-    "similarProjectLink": "https://www.sap.com",
-    "responsiblePeople": "Muhasebe Uzmanı"
-  }
+{
+"task": "Fatura kontrolü",
+"departments": ["Muhasebe"],
+"bestSolution": "RPA",
+"automationRate": 80,
+"recommendation": "Fatura kontrolü için RPA önerilir.",
+"projectIdea": "Otomatik fatura doğrulama sistemi",
+"similarProjectName": "SAP Invoice Management",
+"similarProjectLink": "https://www.sap.com",
+"responsiblePeople": "Muhasebe Uzmanı"
+}
 ]
 Kullanım: Her görev için otomasyon fikri, çözüm tipi, oran ve sorumlu kişi belirleniyor.
 -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -469,13 +504,13 @@ Amaç: Chunk analizlerinden gelen parçaları tek bir nihai JSON raporuna dönü
 
 json
 {
-  "task": "Muhasebe departmanının ana görevleri",
-  "bestSolution": "RPA",
-  "automationRate": 85,
-  "recommendation": "Fatura kontrolü süreçleri RPA ile hızlandırılmalı.",
-  "projectIdea": "Otomatik fatura doğrulama sistemi",
-  "similarProjectName": "SAP Invoice Management",
-  "similarProjectLink": "https://www.sap.com"
+"task": "Muhasebe departmanının ana görevleri",
+"bestSolution": "RPA",
+"automationRate": 85,
+"recommendation": "Fatura kontrolü süreçleri RPA ile hızlandırılmalı.",
+"projectIdea": "Otomatik fatura doğrulama sistemi",
+"similarProjectName": "SAP Invoice Management",
+"similarProjectLink": "https://www.sap.com"
 }
 Kullanım: Pipeline’ın son adımı → tüm analizleri birleştirip tek bir standart JSON çıktısı üretir.
 -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -501,4 +536,4 @@ Chunk Analysis → Departman bazlı kısa özet çıkar.
 Final Analysis → Parçalı analizleri tek JSON raporuna dönüştür.
 
 Chatbot → Kullanıcı sorularını görev verisine dayanarak yanıtla.
- */
+*/
