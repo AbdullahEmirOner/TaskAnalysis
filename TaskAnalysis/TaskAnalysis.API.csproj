@@ -21,4 +21,8 @@
     <ProjectReference Include="..\TaskAnalysis.Share\TaskAnalysis.Share.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\CSV\" />
+  </ItemGroup>
+
 </Project>

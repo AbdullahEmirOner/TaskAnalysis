@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.DTOs.AIDTOs;
@@ -417,57 +418,133 @@ public class AnalysisController : ControllerBase
                 return NotFound("Bu direktörlük için veri bulunamadı.");
 
             // 2) Eski endpointteki gibi chunk üretimi
-            var chunks = filtered
-                .Select((record, index) => new { record, index })
-                .GroupBy(x => x.index / 30)
-                .Select(g => string.Join("\n", g.Select(x =>
-                    $"Müdürlük: {x.record.Mudurluk} | " +
-                    $"Birim: {x.record.Birim} | " +
-                    $"Amaç: {x.record.Amac} | " +
-                    $"Yetki: {x.record.Yetki} | " +
-                    $"Ana Sorumluluk: {x.record.AnaSorumluluk}"
-                )))
+            /*  var chunks = filtered
+                  .Select((record, index) => new { record, index })
+                  .GroupBy(x => x.index / 30)
+                  .Select(g => string.Join("\n", g.Select(x =>
+                      $"Müdürlük: {x.record.Mudurluk} | " +
+                      $"Birim: {x.record.Birim} | " +
+                      $"Amaç: {x.record.Amac} | " +
+                      $"Yetki: {x.record.Yetki} | " +
+                      $"Ana Sorumluluk: {x.record.AnaSorumluluk}"
+                  )))
+                  .ToList();
+
+              var result = new DirectorateTaskAnalysisDto
+              {
+                  Directorate = safeDirectorate
+              };
+
+              // 3) Her chunk’ı AI’a görev bazlı analiz ettir
+              foreach (var chunk in chunks)
+              {
+                  var prompt = AiPromptBuilder.BuildTaskChunkAnalysisPrompt(
+                      safeDirectorate,
+                      "MULTIPLE_DEPARTMENTS",
+                      new List<string> { chunk }
+                  );
+
+                  var aiResponse = await _aiService.AnalyzeAsync(prompt);
+
+                  var parsedTasks = ParseTaskAnalysisItems(aiResponse);
+
+                  foreach (var item in parsedTasks)
+                  {
+                      var departmentName = string.IsNullOrWhiteSpace(item.Department)
+                          ? "Bilinmeyen Müdürlük"
+                          : item.Department;
+
+                      var departmentDto = result.Departments
+                          .FirstOrDefault(x => x.Department == departmentName);
+
+                      if (departmentDto == null)
+                      {
+                          departmentDto = new Core.DTOs.DepartmentDTOs.DepartmentTaskAnalysisDto
+                          {
+                              Department = departmentName
+                          };
+
+                          result.Departments.Add(departmentDto);
+                      }
+
+                      departmentDto.Tasks.Add(item);
+                  }
+              }
+
+              foreach (var department in result.Departments)
+              {
+                  department.OriginalTaskCount = department.Tasks.Count;
+                  department.UniqueTaskCount = department.Tasks.Count;
+              }
+
+              result.DepartmentCount = result.Departments.Count;
+              result.OriginalTaskCount = result.Departments.Sum(x => x.OriginalTaskCount);
+              result.UniqueTaskCount = result.Departments.Sum(x => x.UniqueTaskCount); */
+
+            var result = new DirectorateTaskAnalysisDto { Directorate = safeDirectorate };
+            var deptGroups = filtered
+                .GroupBy(x => x.Mudurluk ?? "Bilinmeyen")
                 .ToList();
 
-            var result = new DirectorateTaskAnalysisDto
+            var allParsedTasks = new ConcurrentBag<TaskAiAnalysisItemDto>();
+
+            foreach (var deptGroup in deptGroups)
             {
-                Directorate = safeDirectorate
-            };
+                var deptChunks = deptGroup
+                    .Select((record, index) => new { record, index })
+                    .GroupBy(x => x.index / 50)
+                    .Select(g => string.Join("\n", g.Select(x =>
+                        $"Müdürlük: {x.record.Mudurluk} | " +
+                        $"Birim: {x.record.Birim} | " +
+                        $"Amaç: {x.record.Amac} | " +
+                        $"Yetki: {x.record.Yetki} | " +
+                        $"Ana Sorumluluk: {x.record.AnaSorumluluk}"
+                    )))
+                    .ToList();
 
-            // 3) Her chunk’ı AI’a görev bazlı analiz ettir
-            foreach (var chunk in chunks)
-            {
-                var prompt = AiPromptBuilder.BuildTaskChunkAnalysisPrompt(
-                    safeDirectorate,
-                    "MULTIPLE_DEPARTMENTS",
-                    new List<string> { chunk }
-                );
-
-                var aiResponse = await _aiService.AnalyzeAsync(prompt);
-
-                var parsedTasks = ParseTaskAnalysisItems(aiResponse);
-
-                foreach (var item in parsedTasks)
+                foreach (var chunk in deptChunks)
                 {
-                    var departmentName = string.IsNullOrWhiteSpace(item.Department)
-                        ? "Bilinmeyen Müdürlük"
-                        : item.Department;
-
-                    var departmentDto = result.Departments
-                        .FirstOrDefault(x => x.Department == departmentName);
-
-                    if (departmentDto == null)
+                    for (int attempt = 1; attempt <= 5; attempt++)
                     {
-                        departmentDto = new Core.DTOs.DepartmentDTOs.DepartmentTaskAnalysisDto
+                        try
                         {
-                            Department = departmentName
-                        };
-
-                        result.Departments.Add(departmentDto);
+                            var prompt = AiPromptBuilder.BuildTaskChunkAnalysisPrompt(
+                                safeDirectorate,
+                                deptGroup.Key,
+                                new List<string> { chunk }
+                            );
+                            var aiResponse = await _aiService.AnalyzeAsync(prompt);
+                            foreach (var t in ParseTaskAnalysisItems(aiResponse))
+                                allParsedTasks.Add(t);
+                            break;
+                        }
+                        catch (Exception ex) when (attempt < 5)
+                        {
+                            var waitSec = ex.Message.Contains("429") ? attempt * 60 : attempt * 10;
+                            // 30sn → 60sn
+                            Console.WriteLine($"Attempt {attempt}/5, {waitSec}sn bekleniyor: {ex.Message}");
+                            await Task.Delay(TimeSpan.FromSeconds(waitSec));
+                        }
                     }
-
-                    departmentDto.Tasks.Add(item);
+                    await Task.Delay(TimeSpan.FromSeconds(3));
                 }
+            }
+
+            foreach (var item in allParsedTasks)
+            {
+                var departmentName = string.IsNullOrWhiteSpace(item.Department)
+                    ? "Bilinmeyen Müdürlük"
+                    : item.Department;
+
+                var departmentDto = result.Departments
+                    .FirstOrDefault(x => x.Department == departmentName);
+
+                if (departmentDto == null)
+                {
+                    departmentDto = new DepartmentTaskAnalysisDto { Department = departmentName };
+                    result.Departments.Add(departmentDto);
+                }
+                departmentDto.Tasks.Add(item);
             }
 
             foreach (var department in result.Departments)
@@ -496,7 +573,7 @@ public class AnalysisController : ControllerBase
                 fromCache = false,
                 source = "ai-created-and-saved",
                 createdAt = entity.CreatedAt,
-                chunkCount = chunks.Count,
+
                 data = result
             });
         }
@@ -507,7 +584,6 @@ public class AnalysisController : ControllerBase
                 $"Görev bazlı AI analizi sırasında hata oluştu: {ex.Message}");
         }
     }
-
 
     private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
     {
