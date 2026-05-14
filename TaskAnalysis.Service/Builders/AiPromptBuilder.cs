@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Threading.Tasks;
 using TaskAnalysis.Core.DTOs.DirectorateDTOs;
 
 namespace TaskAnalysis.Service.Builders;
@@ -178,36 +179,96 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
 
     /* BuildDepartmentChunkAnalysisPrompt → Kullanıcı sorusu yok, sadece görev kayıtlarını analiz edip kısa özet çıkarıyor. 
        Yani bir “analiz raporu” senaryosu.*/
-    public static string BuildPersonAiAnalysisPrompt( string sicilNo, string fullName, string birim, string mudurluk, List<string> relevantChunks)
+
+    public static string BuildPersonAiAnalysisPrompt(string sicilNo, string fullName, string birim, string mudurluk, List<string> relevantChunks)
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("Sen kurumsal süreçleri analiz eden bir yapay zeka dönüşüm danışmanısın.");
+        sb.AppendLine("Sen kurumsal süreçleri analiz eden uzman bir yapay zeka dönüşüm danışmanısın.");
         sb.AppendLine("Aşağıda bir çalışana ait görev kayıtları verilmiştir.");
         sb.AppendLine();
-        sb.AppendLine("Amacın:");
-        sb.AppendLine("1. Her görev için AI ile yapılabilirlik yüzdesi üretmek.");
-        sb.AppendLine("2. Her görev için en uygun çözüm tipini belirlemek.");
-        sb.AppendLine("3. Her görev için kısa öneri yazmak.");
-        sb.AppendLine("4. Her görev için uygulanabilir proje fikri üretmek.");
-        sb.AppendLine("5. Kişinin toplam işlerinin yüzde kaçının AI ile desteklenebileceğini hesaplamak.");
+
+        sb.AppendLine("GÖREV AYIRMA TALİMATI:");
+        sb.AppendLine("- AnaSorumluluk alanı içinde görevler '¤' karakteri ile ayrılmıştır.");
+        sb.AppendLine("- '¤' karakterinin solunda ve sağında kalan her anlamlı parça ayrı görevdir.");
+        sb.AppendLine("- '¤' ile ayrılmış parçaları ASLA birleştirme.");
+        sb.AppendLine("- Her '¤' ayrımından sonra yeni bir taskAnalyses objesi oluştur.");
+        sb.AppendLine("- Eğer bir parça birden fazla alt iş içeriyorsa bile onu tek görev olarak değerlendir.");
+        sb.AppendLine("- '¤' sembolünden 1 fazla görev vardır ona göre çıktıyı kontrol et");
+        sb.AppendLine("- '¤' sembolünden 1 fazla görev vardır ona göre çıktıyı kontrol et bu çok önemli gerçekte olan tüm görevler için cvap verebilmen gerekiyooor dikkat ert");
+        sb.AppendLine("- Eğer metinde ne kadar parça varsa taskAnalyses tam olarak o kadar obje içermelidir.");
+        sb.AppendLine("- taskNo değerleri 1'den başlayarak sırayla verilmelidir.");
+        sb.AppendLine("- Eksik taskNo bırakmak yasaktır.");
+        sb.AppendLine("- Benzer görevleri gruplayarak cevaplama.");
+
+        sb.AppendLine("AMACIN:");
+        sb.AppendLine("1. Her görev için AI ile yapılabilirlik yüzdesi üret.");
+        sb.AppendLine("2. Her görev için en uygun çözüm yaklaşımını belirle.");
+        sb.AppendLine("3. Her görev için kısa öneri yaz.");
+        sb.AppendLine("4. Her görev için proje önerilip önerilemeyeceğini açıkça belirt.");
+        sb.AppendLine("5. Proje önerilmiyorsa neden önerilmediğini açıkça yaz.");
+        sb.AppendLine("6. Proje öneriliyorsa uygulanabilir proje fikri üret.");
+        sb.AppendLine("7. Her görev için mümkünse benzer teknoloji / ürün / platform linki öner.");
         sb.AppendLine();
-        sb.AppendLine("Kurallar:");
+
+        sb.AppendLine("KATI ÇIKTI KURALLARI:");
         sb.AppendLine("- Sadece JSON döndür.");
         sb.AppendLine("- JSON dışında açıklama yazma.");
-        sb.AppendLine("- AiAutomationRate ve AverageAiAutomationRate 0 ile 100 arasında integer olmalı.");
-        sb.AppendLine("- BestSolution değerleri şunlardan biri olabilir: AI, RPA, AI + RPA, Dashboard, Manuel, Hibrit.");
-        sb.AppendLine("- Emin değilsen düşük değil makul oran ver.");
-        sb.AppendLine("- Önerdiğin bir proje fikri somut ve uygulanabilir olmalı.");
-        sb.AppendLine("- Önerdiğin bir proje fikrine uygun bir link ver: projectLink");
-        sb.AppendLine("- Görevleri mümkün olduğunca ayrı ayrı analiz et.");
+        sb.AppendLine("- Markdown kullanma.");
+        sb.AppendLine("- taskAnalyses içindeki her obje mutlaka taskNo içermeli.");
+        sb.AppendLine("- task alanına sadece ilgili görev yazılmalı.");
+        sb.AppendLine("- Tüm görev listesini tek task içine yapıştırmak yasaktır.");
         sb.AppendLine();
+
+        sb.AppendLine("PROJECT IDEA KURALI:");
+        sb.AppendLine("- projectSuggested true/false olmalı.");
+        sb.AppendLine("- Eğer görev için proje öneriyorsan projectSuggested=true olmalı.");
+        sb.AppendLine("- Eğer görev için proje önermiyorsan projectSuggested=false olmalı.");
+        sb.AppendLine("- projectSuggested=false ise projectIdea='Önerilmiyor' yaz.");
+        sb.AppendLine("- projectSuggested=false ise notSuggestedReason alanında neden önermediğini açıkça yaz.");
+        sb.AppendLine("- projectSuggested=true ise notSuggestedReason='-' yaz.");
+        sb.AppendLine();
+
+        sb.AppendLine("PROJECT LINK KURALI:");
+        sb.AppendLine("- projectLink alanını boş bırakma.");
+        sb.AppendLine("- projectLink null olamaz.");
+        sb.AppendLine("- Mümkünse benzer çözüm, ürün, platform veya teknoloji için gerçek ve bilinen bir resmi link öner.");
+        sb.AppendLine("- Örnek olarak Microsoft Power BI, UiPath, SAP SuccessFactors, Workday, ServiceNow, Microsoft Copilot, Tableau, Power Automate, Azure AI, Google Cloud AI gibi resmi teknoloji sayfaları kullanılabilir.");
+        sb.AppendLine("- Link bilmiyorsan projectLink='Link bulunamadı' yaz.");
+        sb.AppendLine("- projectLinkReason alanında linkin neden verildiğini veya neden bulunamadığını açıkla.");
+        sb.AppendLine("- Link uydurma.");
+        sb.AppendLine();
+
+        sb.AppendLine("AI İLE YAPILAMAYAN GÖREV KURALI:");
+        sb.AppendLine("- Eğer görev AI ile anlamlı desteklenemiyorsa:");
+        sb.AppendLine("  aiAutomationRate 0-20 arasında olmalı.");
+        sb.AppendLine("  bestSolution='Manuel' olmalı.");
+        sb.AppendLine("  projectSuggested=false olmalı.");
+        sb.AppendLine("  projectIdea='Önerilmiyor' olmalı.");
+        sb.AppendLine("  notSuggestedReason içinde neden önerilmediği yazılmalı.");
+        sb.AppendLine("  recommendation içinde 'Bu görev AI ile yapılamaz' ifadesi geçmeli.");
+        sb.AppendLine();
+
+        sb.AppendLine("ORANLAMA:");
+        sb.AppendLine("- aiAutomationRate 0-100 arasında integer olmalı.");
+        sb.AppendLine("- averageAiAutomationRate tüm görevlerin ortalaması olmalı.");
+        sb.AppendLine("- Raporlama, veri analizi, belge üretimi, KPI takibi, dashboard, SAP veri girişi gibi görevlerde oran yüksek olabilir.");
+        sb.AppendLine("- İnsan ilişkisi, kültür, ödüllendirme, stratejik karar, yüz yüze koordinasyon gibi görevlerde oran düşük olmalı.");
+        sb.AppendLine();
+
+        sb.AppendLine("BEST SOLUTION:");
+        sb.AppendLine("- bestSolution serbesttir.");
+        sb.AppendLine("- Teknik ve gerçekçi çözüm adı yaz.");
+        sb.AppendLine("- Örnekler: AI Agent, RPA, AI + RPA, Dashboard, Workflow Automation, Document Intelligence, Predictive Analytics, Process Mining, Chatbot, Manuel, Hibrit.");
+        sb.AppendLine();
+
         sb.AppendLine("Çalışan Bilgileri:");
         sb.AppendLine($"SicilNo: {sicilNo}");
         sb.AppendLine($"Ad Soyad: {fullName}");
         sb.AppendLine($"Birim: {birim}");
         sb.AppendLine($"Müdürlük: {mudurluk}");
         sb.AppendLine();
+
         sb.AppendLine("Görev Kayıtları:");
         sb.AppendLine("```");
 
@@ -219,7 +280,8 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
 
         sb.AppendLine("```");
         sb.AppendLine();
-        sb.AppendLine("Aşağıdaki JSON formatına birebir uygun cevap ver:");
+
+        sb.AppendLine("JSON formatı:");
         sb.AppendLine("""
 {
   "sicilNo": "string",
@@ -231,12 +293,16 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
   "generalComment": "string",
   "taskAnalyses": [
     {
+      "taskNo": 1,
       "task": "string",
       "aiAutomationRate": 0,
       "bestSolution": "string",
       "recommendation": "string",
+      "projectSuggested": true,
       "projectIdea": "string",
-      "projectLink" : "string"
+      "notSuggestedReason": "string",
+      "projectLink": "string",
+      "projectLinkReason": "string"
     }
   ]
 }
@@ -245,10 +311,7 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         return sb.ToString();
     }
 
-    public static string BuildFinalDepartmentAnalysisPrompt(
-        IEnumerable<string> partialAnalyses,
-        string directorate,
-        string? department)
+    public static string BuildFinalDepartmentAnalysisPrompt(IEnumerable<string> partialAnalyses, string directorate,string? department)
     {
         var sb = new StringBuilder();
 
@@ -334,10 +397,7 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         return sb.ToString();
     }
 
-    public static string BuildTaskChunkAnalysisPrompt(
-        string directorate,
-        string department,
-        List<string> tasks)
+    public static string BuildTaskChunkAnalysisPrompt( string directorate, string department, List<string> tasks)
     {
         var sb = new StringBuilder();
 
@@ -405,10 +465,7 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         return sb.ToString();
     }
 
-    public static string BuildFastDepartmentAnalysisPrompt(
-    string directorate,
-    string department,
-    List<string> responsibilities)
+    public static string BuildFastDepartmentAnalysisPrompt( string directorate, string department, List<string> responsibilities)
     {
         var sb = new StringBuilder();
 

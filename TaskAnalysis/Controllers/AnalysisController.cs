@@ -7,6 +7,7 @@ using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.DTOs.AIDTOs;
 using TaskAnalysis.Core.DTOs.ChatbotDTOs;
 using TaskAnalysis.Core.DTOs.DepartmentDTOs;
+using TaskAnalysis.Core.DTOs.PersonDTOs;
 using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Entities.RecordEntities;
 using TaskAnalysis.Core.Interfaces;
@@ -36,10 +37,7 @@ public class AnalysisController : ControllerBase
     private readonly IAiService _aiService;
     private readonly IApplicationDbContext _context;
 
-    public AnalysisController(ICsvReaderService csvReaderService,
-    IAnalysisService analysisService,
-    IConfiguration configuration, 
-    IAiService aiService,
+    public AnalysisController(ICsvReaderService csvReaderService, IAnalysisService analysisService, IConfiguration configuration, IAiService aiService,
     IMemoryCache cache,
     IEmbeddingHelperService embeddingHelperService,
     IRetrievalService retrieval,
@@ -584,6 +582,23 @@ public class AnalysisController : ControllerBase
                 $"Görev bazlı AI analizi sırasında hata oluştu: {ex.Message}");
         }
     }
+
+
+    [HttpGet("person-ai/grouped")]
+    public IActionResult GetGroupedPersonAiResults()
+    {
+        var records = _context.PersonAiAnalysisResults
+            .AsEnumerable() // IQueryable → IEnumerable
+            .Select(x => JsonSerializer.Deserialize<PersonAiAnalysisDto>(x.ResultJson))
+            .Where(x => x != null)
+            .ToList();
+
+
+        var grouped = _analysisService.GroupByBirimAndMudurluk(records!);
+
+        return Ok(grouped);
+    }
+
 
     private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
     {

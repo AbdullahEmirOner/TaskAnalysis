@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using TaskAnalysis.Core.DTOs;
@@ -424,6 +425,47 @@ public class AnalysisService : IAnalysisService
 
         _context.PersonAiAnalysisResults.Add(entity);
         await _context.SaveChangesAsync();
+
+        return result;
+    }
+
+    public List<DirectorateGroupedAiDto> GroupByBirimAndMudurluk( List<PersonAiAnalysisDto> personAnalyses)
+    {
+        var result = personAnalyses
+            .GroupBy(x => x.Birim)
+            .Select(birimGroup => new DirectorateGroupedAiDto
+            {
+                Birim = birimGroup.Key,
+
+                PersonCount = birimGroup.Count(),
+
+                TotalTaskCount = birimGroup.Sum(x => x.TotalTaskCount),
+
+                AverageAiAutomationRate = (int)Math.Round(
+                    birimGroup.Average(x => x.AverageAiAutomationRate)
+                ),
+
+                Mudurlukler = birimGroup
+                    .GroupBy(x => x.Mudurluk)
+                    .Select(mudurlukGroup => new DepartmentGroupedAiDto
+                    {
+                        Mudurluk = mudurlukGroup.Key,
+
+                        PersonCount = mudurlukGroup.Count(),
+
+                        TotalTaskCount = mudurlukGroup.Sum(x => x.TotalTaskCount),
+
+                        AverageAiAutomationRate = (int)Math.Round(
+                            mudurlukGroup.Average(x => x.AverageAiAutomationRate)
+                        ),
+
+                        Persons = mudurlukGroup.ToList()
+                    })
+                    .OrderBy(x => x.Mudurluk)
+                    .ToList()
+            })
+            .OrderBy(x => x.Birim)
+            .ToList();
 
         return result;
     }

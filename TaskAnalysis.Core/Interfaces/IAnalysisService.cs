@@ -19,6 +19,8 @@ namespace TaskAnalysis.Core.Interfaces
 
         Task<PersonAiAnalysisDto> AnalyzePersonBySicilNoAsync(string sicilNo);
 
+        List<DirectorateGroupedAiDto> GroupByBirimAndMudurluk(List<PersonAiAnalysisDto> personAnalyses);
+
      //   Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200);
     }
 }
