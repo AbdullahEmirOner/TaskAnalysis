@@ -21,6 +21,8 @@ namespace TaskAnalysis.Core.Interfaces
 
         List<DirectorateGroupedAiDto> GroupByBirimAndMudurluk(List<PersonAiAnalysisDto> personAnalyses);
 
+        Task SaveDirectorateGroupedResultsAsync(List<PersonAiAnalysisDto> personAnalyses);
+
      //   Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200);
     }
 }

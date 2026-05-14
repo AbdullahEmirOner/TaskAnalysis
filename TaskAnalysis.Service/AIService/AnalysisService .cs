@@ -470,6 +470,76 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
+    public async Task SaveDirectorateGroupedResultsAsync(
+    List<PersonAiAnalysisDto> personAnalyses)
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            PropertyNameCaseInsensitive = true
+        };
+
+        var groupedByDirectorate = personAnalyses
+            .Where(x => !string.IsNullOrWhiteSpace(x.Birim))
+            .GroupBy(x => x.Birim.Trim())
+            .ToList();
+
+        foreach (var directorateGroup in groupedByDirectorate)
+        {
+            var directorateName = directorateGroup.Key;
+
+            var directorateResult = new
+            {
+                directorate = directorateName,
+                personCount = directorateGroup.Count(),
+                totalTaskCount = directorateGroup.Sum(x => x.TotalTaskCount),
+                averageAiAutomationRate = (int)Math.Round(
+                    directorateGroup.Average(x => x.AverageAiAutomationRate)
+                ),
+                mudurlukler = directorateGroup
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Mudurluk))
+                    .GroupBy(x => x.Mudurluk.Trim())
+                    .Select(mudurlukGroup => new
+                    {
+                        mudurluk = mudurlukGroup.Key,
+                        personCount = mudurlukGroup.Count(),
+                        totalTaskCount = mudurlukGroup.Sum(x => x.TotalTaskCount),
+                        averageAiAutomationRate = (int)Math.Round(
+                            mudurlukGroup.Average(x => x.AverageAiAutomationRate)
+                        ),
+                        persons = mudurlukGroup.ToList()
+                    })
+                    .OrderBy(x => x.mudurluk)
+                    .ToList()
+            };
+
+            var resultJson = JsonSerializer.Serialize(directorateResult, options);
+
+            var existing = await _context.DirectorateTaskAnalysisResults
+                .FirstOrDefaultAsync(x => x.Directorate == directorateName);
+
+            if (existing != null)
+            {
+                existing.ResultJson = resultJson;
+                existing.CreatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                var entity = new DirectorateTaskAnalysisResult
+                {
+                    Directorate = directorateName,
+                    ResultJson = resultJson,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _context.DirectorateTaskAnalysisResults.AddAsync(entity);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+
     /*   public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200)
      { // Bu metodu yazma sebebim --> Kullanmadım 😒
     

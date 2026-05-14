@@ -600,6 +600,63 @@ public class AnalysisController : ControllerBase
     }
 
 
+    [HttpPost("person-ai/save-grouped-by-directorate")]
+    public async Task<IActionResult> SaveGroupedByDirectorate()
+    {
+        var records = await _context.PersonAiAnalysisResults
+            .ToListAsync();
+
+        var personAnalyses = records
+            .Select(x => JsonSerializer.Deserialize<PersonAiAnalysisDto>(
+                x.ResultJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }))
+            .Where(x => x != null)
+            .ToList()!;
+
+        await _analysisService.SaveDirectorateGroupedResultsAsync(personAnalyses);
+
+        return Ok(new
+        {
+            message = "Direktörlük bazlı AI analiz sonuçları kaydedildi.",
+            directorateCount = personAnalyses
+                .Where(x => !string.IsNullOrWhiteSpace(x.Birim))
+                .Select(x => x.Birim.Trim())
+                .Distinct()
+                .Count(),
+            personCount = personAnalyses.Count
+        });
+    }
+
+
+    [HttpGet("directorate-ai/{directorate}")]
+    public async Task<IActionResult> GetDirectorateAiResult(string directorate)
+    {
+        if (string.IsNullOrWhiteSpace(directorate))
+            return BadRequest("Direktörlük adı boş olamaz.");
+
+        var safeDirectorate = directorate.Trim();
+
+        var existing = await _context.DirectorateTaskAnalysisResults
+            .FirstOrDefaultAsync(x => x.Directorate == safeDirectorate);
+
+        if (existing == null)
+            return NotFound($"{safeDirectorate} direktörlüğü için kayıt bulunamadı.");
+
+        var jsonElement = JsonSerializer.Deserialize<JsonElement>(existing.ResultJson);
+
+        return Ok(new
+        {
+            fromCache = true,
+            source = "database",
+            directorate = existing.Directorate,
+            createdAt = existing.CreatedAt,
+            data = jsonElement
+        });
+    }
+
     private List<TaskAiAnalysisItemDto> ParseTaskAnalysisItems(string aiResponse)
     {
         try
