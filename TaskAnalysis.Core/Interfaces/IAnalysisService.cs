@@ -23,6 +23,8 @@ namespace TaskAnalysis.Core.Interfaces
 
         Task SaveDirectorateGroupedResultsAsync(List<PersonAiAnalysisDto> personAnalyses);
 
+        Task<string> AskQuestionPersonAsync(ChatbotQuestionDto request);
+
      //   Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200);
     }
 }

@@ -470,8 +470,7 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
-    public async Task SaveDirectorateGroupedResultsAsync(
-    List<PersonAiAnalysisDto> personAnalyses)
+    public async Task SaveDirectorateGroupedResultsAsync(List<PersonAiAnalysisDto> personAnalyses)
     {
         var options = new JsonSerializerOptions
         {
@@ -538,6 +537,43 @@ public class AnalysisService : IAnalysisService
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task<string> AskQuestionPersonAsync(ChatbotQuestionDto request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Question))
+            throw new Exception("Soru boş olamaz.");
+
+        // Embedding oluştur
+        var queryEmbedding = await _embeddingService.CreateEmbeddingAsync(request.Question);
+
+        List<string> chunks;
+
+        if (!string.IsNullOrWhiteSpace(request.FileName))
+        {
+            var safeFileName = Path.GetFileName(request.FileName);
+            // Daha fazla chunk getir (örneğin 10)
+            chunks = await _vectorDb.SearchByPersonAsync(safeFileName, request.PersonName, queryEmbedding, 10);
+        }
+        else
+        {
+            chunks = await _vectorDb.SearchAllAsync(queryEmbedding, 10);
+        }
+
+        if (chunks == null || chunks.Count == 0)
+            return "Henüz indexlenmiş veri bulunamadı. Önce index-all-csv endpointini çalıştırın.";
+
+        // Chunkları birleştir
+        var context = string.Join("\n\n", chunks);
+
+        // Prompt oluştur (Bu kişi → isim dönüşümü burada yapılır)
+        var prompt = AiPromptBuilder.BuildChatbotPrompt(context, request.Question, request.PersonName);
+
+        // AI servisine gönder
+        var aiResponse = await _aiService.AnalyzeAsync(prompt);
+
+        return aiResponse;
+    }
+
 
 
     /*   public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200)

@@ -701,7 +701,7 @@ public class AnalysisController : ControllerBase
 
         try
         {
-            var response = await _analysisService.AskQuestionAsync(request);
+            var response = await _analysisService.AskQuestionPersonAsync(request);
             return Ok(response);
         }
         catch (Exception ex)

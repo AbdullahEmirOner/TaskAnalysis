@@ -537,10 +537,11 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
         sb.AppendLine("  • Gerekirse birden fazla kaydı birleştir.");
         sb.AppendLine("  • Mantığını açık ve net şekilde açıklayarak yanıt ver.");
         sb.AppendLine("- Eğer kesinlikle HİÇBİR ilgili bilgi yoksa sadece şunu söyle: 'Verilen veriler bu soruyu yanıtlamak için yeterli değil'.");
+        sb.AppendLine("- Kaynak gösterme yani lu kayıda göre geliyor felan deme");
         sb.AppendLine("- Kişi adıyla sorulan sorulara cevap verirken mutlaka kişinin ismini kullan, 'bu kişi' deme.");
         sb.AppendLine("- Cevabın tamamını Türkçe yaz.");
         sb.AppendLine("- Açık, öz ve profesyonel ol.");
-        sb.AppendLine("- Eğer personName verilmişse, cevabında mutlaka bu ismi kullan. 'Bu kişi' ifadesini ASLA kullanma.");
+        sb.AppendLine("- Eğer personName verilmişse, cevabında mutlaka bu ismi kullan. 'Bu kişi' yada benzeri bir ifade ifadesini ASLA kullanma.");
 
         sb.AppendLine();
         sb.AppendLine("Şirket görev verisi (yapılandırılmış):");
