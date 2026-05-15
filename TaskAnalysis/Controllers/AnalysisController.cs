@@ -691,7 +691,25 @@ public class AnalysisController : ControllerBase
             return new();
         }
     }
-  
+
+
+    [HttpPost("chatbot-ask-person")]
+    public async Task<IActionResult> ChatbotAsk([FromBody] ChatbotQuestionDto request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Question))
+            return BadRequest("Soru boş olamaz.");
+
+        try
+        {
+            var response = await _analysisService.AskQuestionAsync(request);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            // Hata durumunda kullanıcıya açıklayıcı mesaj dön
+            return StatusCode(500, $"Bir hata oluştu: {ex.Message}");
+        }
+    }
 
     /* [HttpGet("ai-mock-analysis")]
         public IActionResult GetAiAnalysis()

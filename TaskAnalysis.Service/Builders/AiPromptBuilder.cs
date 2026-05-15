@@ -518,6 +518,55 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
 
         return sb.ToString();
     }
+
+    public static string BuildChatbotPrompt(string context, string question, string personName = null)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("Sen bir kurumsal görev analizi asistanısın.");
+        sb.AppendLine("Görevin, kullanıcının sorusunu SADECE verilen şirket görev verilerini kullanarak yanıtlamaktır.");
+
+        sb.AppendLine();
+        sb.AppendLine("Katı Kurallar:");
+        sb.AppendLine("- Harici bilgi kullanma.");
+        sb.AppendLine("- Yalnızca verilen verileri kullan.");
+        sb.AppendLine("- Direktörlük, müdürlük ve kişi adı bilgilerini doğru şekilde kullan.");
+        sb.AppendLine("- Chunk veya kayıt numarası gibi teknik ifadelerden BAHSETME.");
+        sb.AppendLine("- Eğer doğrudan cevap bulunamazsa:");
+        sb.AppendLine("  • İlgili görevlerden mantıklı çıkarım yap.");
+        sb.AppendLine("  • Gerekirse birden fazla kaydı birleştir.");
+        sb.AppendLine("  • Mantığını açık ve net şekilde açıklayarak yanıt ver.");
+        sb.AppendLine("- Eğer kesinlikle HİÇBİR ilgili bilgi yoksa sadece şunu söyle: 'Verilen veriler bu soruyu yanıtlamak için yeterli değil'.");
+        sb.AppendLine("- Kişi adıyla sorulan sorulara cevap verirken mutlaka kişinin ismini kullan, 'bu kişi' deme.");
+        sb.AppendLine("- Cevabın tamamını Türkçe yaz.");
+        sb.AppendLine("- Açık, öz ve profesyonel ol.");
+        sb.AppendLine("- Eğer personName verilmişse, cevabında mutlaka bu ismi kullan. 'Bu kişi' ifadesini ASLA kullanma.");
+
+        sb.AppendLine();
+        sb.AppendLine("Şirket görev verisi (yapılandırılmış):");
+        sb.AppendLine("Her satır bir kişinin görevlerini temsil eder ve birden fazla görev içerebilir.");
+        sb.AppendLine(context);
+
+        sb.AppendLine();
+        sb.AppendLine("Kullanıcı sorusu:");
+
+        // Eğer personName doluysa ve question içinde "Bu kişi" geçiyorsa, otomatik olarak isimle değiştir
+        if (!string.IsNullOrWhiteSpace(personName) &&
+            question.IndexOf("Bu kişi", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            sb.AppendLine(question.Replace("Bu kişi", personName, StringComparison.OrdinalIgnoreCase));
+        }
+        else
+        {
+            sb.AppendLine(question);
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Cevap:");
+
+        return sb.ToString();
+    }
+
 }
 
 /* BuildTaskChunkAnalysisPrompt & BuildFinalDepartmentAnalysisPrompt

@@ -82,6 +82,32 @@ public class VectorDbService : IVectorDbService
         return Task.FromResult(results);
     }
 
+    public Task<List<string>> SearchByPersonAsync(string fileName, string personName, float[] embedding, int limit = 3)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return Task.FromResult(new List<string>());
+
+        var safeFileName = Path.GetFileName(fileName);
+        var key = _store.Keys.FirstOrDefault(k => string.Equals(k, safeFileName, StringComparison.OrdinalIgnoreCase));
+
+        if (key == null)
+            return Task.FromResult(new List<string>());
+
+        var results = _store[key]
+            .Where(x => x.Text.IndexOf(personName, StringComparison.OrdinalIgnoreCase) >= 0)
+            .Select(x => new
+            {
+                x.Text,
+                Score = CosineSimilarity(x.Embedding, embedding)
+            })
+            .OrderByDescending(x => x.Score)
+            .Take(limit)
+            .Select(x => x.Text)
+            .ToList();
+
+        return Task.FromResult(results);
+    }
+
     public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 3) // Tüm dosyalarda kayıtlı embedding’ler arasında arama yapıyor.
     {
         var allItems = _store

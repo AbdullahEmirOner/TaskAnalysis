@@ -10,5 +10,6 @@ namespace TaskAnalysis.Core.DTOs.ChatbotDTOs
     {
         public string Question { get; set; } = string.Empty;
         public string? FileName { get; set; }
+        public string? PersonName { get; set; } = string.Empty;
     }
 }
