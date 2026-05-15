@@ -111,14 +111,33 @@ namespace TaskAnalysis.Service.Mini_LangChainService
             if (records == null || records.Count == 0)
                 throw new Exception("CSV okundu ama kayıt bulunamadı.");
 
-            var chunks = CreateChunks(records, 5);
-
             _vectorDb.Clear(safeFileName);
 
-            foreach (var chunk in chunks)
+            var indexedChunkCount = 0;
+
+            foreach (var record in records)
             {
+                var chunk = $@"
+Sicil No: {record.SicilNo}
+Ad Soyad: {record.ad_soyad}
+Birim: {record.Birim}
+Müdürlük: {record.Mudurluk}
+Amaç: {record.Amac}
+Yetki: {record.Yetki}
+Ana Sorumluluk: {record.AnaSorumluluk}
+";
+
                 var embedding = await _embeddingService.CreateEmbeddingAsync(chunk);
-                await _vectorDb.InsertAsync(safeFileName, chunk, embedding);
+
+                await _vectorDb.InsertAsync(
+                    safeFileName,
+                    chunk,
+                    embedding,
+                    record.SicilNo,
+                    record.ad_soyad
+                );
+
+                indexedChunkCount++;
             }
 
             return new
@@ -126,8 +145,8 @@ namespace TaskAnalysis.Service.Mini_LangChainService
                 fileName = safeFileName,
                 indexed = true,
                 recordCount = records.Count,
-                chunkCount = chunks.Count,
-                message = "CSV başarıyla memory vector store içine indexlendi."
+                chunkCount = indexedChunkCount,
+                message = "CSV başarıyla kişi bazlı memory vector store içine indexlendi."
             };
         }
 

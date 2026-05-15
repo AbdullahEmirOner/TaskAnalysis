@@ -277,7 +277,7 @@ public class AnalysisService : IAnalysisService
 
         return scoredRecords;
     }*/
-   
+
     public async Task<string> AskQuestionAsync(ChatbotQuestionDto request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question))
@@ -287,19 +287,37 @@ public class AnalysisService : IAnalysisService
 
         List<string> chunks;
 
-        if (!string.IsNullOrWhiteSpace(request.FileName))
-        {
-            var safeFileName = Path.GetFileName(request.FileName);
+        var safeFileName = !string.IsNullOrWhiteSpace(request.FileName)
+            ? Path.GetFileName(request.FileName)
+            : string.Empty;
 
-            chunks = await _vectorDb.SearchAsync(safeFileName, queryEmbedding, 1);
+        if (!string.IsNullOrWhiteSpace(request.PersonName))
+        {
+            chunks = await _vectorDb.SearchByPersonAsync(
+                safeFileName,
+                request.PersonName,
+                queryEmbedding,
+                3);
+        }
+        else if (!string.IsNullOrWhiteSpace(safeFileName))
+        {
+            chunks = await _vectorDb.SearchAsync(
+                safeFileName,
+                queryEmbedding,
+                3);
         }
         else
         {
-            chunks = await _vectorDb.SearchAllAsync(queryEmbedding, 1);
+            chunks = await _vectorDb.SearchAllAsync(
+                queryEmbedding,
+                3);
         }
 
         if (chunks == null || chunks.Count == 0)
             return "Henüz indexlenmiş veri bulunamadı. Önce index-all-csv endpointini çalıştırın.";
+
+        if (chunks.Count == 1 && chunks[0].StartsWith("Bu dosyada"))
+            return chunks[0];
 
         var context = string.Join("\n\n", chunks);
 

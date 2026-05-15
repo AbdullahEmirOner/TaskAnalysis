@@ -1,4 +1,5 @@
-﻿using TaskAnalysis.Core.DTOs.RAGDTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using TaskAnalysis.Core.DTOs.RAGDTOs;
 using TaskAnalysis.Core.Interfaces.IRAG;
 
 namespace TaskAnalysis.Service.LangChainService;
@@ -27,18 +28,21 @@ Sonuç: En yakın vektörler bulunarak benzer içerikler listelenir.
 public class VectorDbService : IVectorDbService
 {                    
     private readonly Dictionary<string, List<VectorItemDto>> _store = new(); // _store → dosya adı → embedding listesi şeklinde çalışan bir in‑memory index. 
-    // Vector DB2 ye geçiş yapacağız -->PINECONE, yapay zekâ uygulamalarında kullanılan bir vektör veritabanı hizmetidir.
-    // Büyük ölçekli vektör verilerini depolamak, yönetmek ve sorgulamak için optimize edilmiştir. Pinecone, özellikle makine öğrenmesi modelleri tarafından
+                                                                             // Vector DB2 ye geçiş yapacağız -->PINECONE, yapay zekâ uygulamalarında kullanılan bir vektör veritabanı hizmetidir.
+                                                                             // Büyük ölçekli vektör verilerini depolamak, yönetmek ve sorgulamak için optimize edilmiştir. Pinecone, özellikle makine öğrenmesi modelleri tarafından
 
-    public Task InsertAsync(string fileName, string text, float[] embedding)
+    public Task InsertAsync(string fileName, string text, float[] embedding, string sicilNo, string personName)
     {
         var safeFileName = Path.GetFileName(fileName);
-        
+
         if (!_store.ContainsKey(safeFileName))
             _store[safeFileName] = new List<VectorItemDto>();
 
         _store[safeFileName].Add(new VectorItemDto
         {
+            FileName = safeFileName,
+            SicilNo = sicilNo,
+            PersonName = personName,
             Text = text,
             Embedding = embedding
         });
@@ -51,6 +55,7 @@ public class VectorDbService : IVectorDbService
          _store aslında senin küçük bir vektör veritabanın.
          */
     }
+
 
     public Task<List<string>> SearchAsync(string fileName, float[] embedding, int limit = 3)
     // InsertAsync ile embedding kaydediyorsun,
@@ -82,31 +87,37 @@ public class VectorDbService : IVectorDbService
         return Task.FromResult(results);
     }
 
-    public Task<List<string>> SearchByPersonAsync(string fileName, string personName, float[] embedding, int limit = 3)
+
+    public Task<List<string>> SearchByPersonAsync(string fileName, string personName, float[] queryEmbedding, int topK)
     {
-        if (string.IsNullOrWhiteSpace(fileName))
+        var normalizedFileName = Path.GetFileName(fileName);
+
+        if (!_store.TryGetValue(normalizedFileName, out var vectors))
             return Task.FromResult(new List<string>());
 
-        var safeFileName = Path.GetFileName(fileName);
-        var key = _store.Keys.FirstOrDefault(k => string.Equals(k, safeFileName, StringComparison.OrdinalIgnoreCase));
+        // önce kişiyi filtrele
+        var personChunks = vectors
+            .Where(x => x.PersonName == personName)
+            .ToList();
 
-        if (key == null)
+        if (!personChunks.Any())
             return Task.FromResult(new List<string>());
 
-        var results = _store[key]
-            .Where(x => x.Text.IndexOf(personName, StringComparison.OrdinalIgnoreCase) >= 0)
+        // sonra similarity hesapla
+        var result = personChunks
             .Select(x => new
             {
                 x.Text,
-                Score = CosineSimilarity(x.Embedding, embedding)
+                Score = CosineSimilarity(queryEmbedding, x.Embedding)
             })
             .OrderByDescending(x => x.Score)
-            .Take(limit)
+            .Take(topK)
             .Select(x => x.Text)
             .ToList();
 
-        return Task.FromResult(results);
+        return Task.FromResult(result);
     }
+
 
     public Task<List<string>> SearchAllAsync(float[] embedding, int limit = 3) // Tüm dosyalarda kayıtlı embedding’ler arasında arama yapıyor.
     {
@@ -125,6 +136,7 @@ public class VectorDbService : IVectorDbService
         return Task.FromResult(allItems);
     }
 
+
     public bool IsIndexed(string fileName)
     { /* IsIndexed = “Bu dosya için embedding eklenmiş mi?” kontrolü.
 
@@ -136,9 +148,9 @@ public class VectorDbService : IVectorDbService
        */
         var safeFileName = Path.GetFileName(fileName);
 
-        return _store.ContainsKey(safeFileName)
-               && _store[safeFileName].Count > 0;
+        return _store.ContainsKey(safeFileName) && _store[safeFileName].Count > 0;
     }
+
 
     public void Clear(string fileName) // Çokta gerek yok aslında zaten sabit csv kullanıyoruz tekrar tekrar indexlemeye gerek yok.
     {
@@ -147,6 +159,7 @@ public class VectorDbService : IVectorDbService
         if (_store.ContainsKey(safeFileName))
             _store.Remove(safeFileName);
     }
+
 
     public double CosineSimilarity(float[] v1, float[] v2)
     { /* Bu fonksiyon iki vektör arasındaki cosine similarity değerini döndürüyor.
@@ -174,6 +187,7 @@ public class VectorDbService : IVectorDbService
 
         return dot / (Math.Sqrt(mag1) * Math.Sqrt(mag2) + 1e-8);
     }
+
 
     public int GetTotalItemCount()
     {

@@ -5,7 +5,7 @@ namespace TaskAnalysis.Core.Interfaces.IRAG;
 
 public interface IVectorDbService
 {
-    Task InsertAsync(string fileName, string text, float[] embedding);
+     Task InsertAsync(string fileName, string text, float[] embedding, string sicilNo, string personName);
 
     Task<List<string>> SearchAsync(string fileName, float[] embedding, int limit = 3);
 
