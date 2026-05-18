@@ -27,15 +27,12 @@ public class AnalysisService : IAnalysisService
     private readonly Dictionary<string, List<(string Text,float[] Vector)>> _vectorStore = new();
     private readonly ICsvReaderService _csvReaderService;
     private readonly IEmbeddingService _embeddingService;
-    private readonly IEmbeddingHelperService _embeddingHelperService;
     private readonly IAiService _aiService;
-    private readonly IMemoryCache _cache;
     private readonly IParseHeleprService _parseHeleprService;
     private readonly IConfiguration _configuration;
     private readonly IRetrievalService _retrieval;
     private readonly IVectorDbService _vectorDb;
     private readonly IApplicationDbContext _context;
-    private readonly ITaskExtractionService _taskExtractionService;
 
     public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService, ITaskExtractionService taskExtractionService,
         ICsvReaderService csvReaderService, IEmbeddingHelperService embeddingHelperService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context, IParseHeleprService parseHeleprService)
@@ -197,6 +194,7 @@ public class AnalysisService : IAnalysisService
         return sb.ToString();
     }
 
+
     public List<UniqueTaskDto> BuildUniqueTask(List<DirectorateSummaryDto> summaries) // Farklı müdürlüklerde aynı görevler tek bir görev olarak listeleniyor ama aynı yazılması gerekiyor 
     { /* BuildUniqueTask
        Şirket görev özetlerinden (DirectorateSummaryDto) çıkarılan benzersiz görevleri (UniqueTaskDto) üretmeni sağlıyor.
@@ -328,6 +326,7 @@ public class AnalysisService : IAnalysisService
         return aiResponse;
     } // En önemli fonksiyoooon !!!!
 
+
     public async Task<PersonAiAnalysisDto> AnalyzePersonBySicilNoAsync(string sicilNo)
     {
         if (string.IsNullOrWhiteSpace(sicilNo))
@@ -447,6 +446,7 @@ public class AnalysisService : IAnalysisService
         return result;
     }
 
+
     public List<DirectorateGroupedAiDto> GroupByBirimAndMudurluk( List<PersonAiAnalysisDto> personAnalyses)
     {
         var result = personAnalyses
@@ -487,6 +487,7 @@ public class AnalysisService : IAnalysisService
 
         return result;
     }
+
 
     public async Task SaveDirectorateGroupedResultsAsync(List<PersonAiAnalysisDto> personAnalyses)
     {
@@ -556,6 +557,7 @@ public class AnalysisService : IAnalysisService
         await _context.SaveChangesAsync();
     }
 
+
     public async Task<string> AskQuestionPersonAsync(ChatbotQuestionDto request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question))
@@ -591,7 +593,6 @@ public class AnalysisService : IAnalysisService
 
         return aiResponse;
     }
-
 
 
     /*   public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200)

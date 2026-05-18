@@ -15,7 +15,7 @@ namespace TaskAnalysis.DAL.DbContext
         /* DbSet<DepartmentAiAnalysisResult> ile EF Core’a bu entity’nin veritabanı karşılığı bir tablo olduğunu söylüyoruz.
            Migration çalışınca property’leri kolon olacak şekilde varsayılan olarak DepartmentAiAnalysisResults adlı tablo oluşturulur.
        
-        --->DepartmentAiAnalysisResult sınıfını veritabanında takip et (track et), bunun için bir tablo oluştur/kullan
+        ---> -DepartmentAiAnalysisResult sınıfını veritabanında takip et (track et), bunun için bir tablo oluştur/kullan
          */
 
         public DbSet<PersonAiAnalysisResult> PersonAiAnalysisResults { get; set; }
