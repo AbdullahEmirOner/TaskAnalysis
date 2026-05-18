@@ -157,36 +157,38 @@ Senin örneğinde → anonim nesnelerden oluşan bir dizi (AnonimTip[]).
             .GetProperty("choices")[0]
             .GetProperty("message")
             .GetProperty("content")
-            .GetString() ?? string.Empty;
+            .GetString() ?? string.Empty; // ?? operatörü, soldaki ifade null ise sağdaki değeri kullan mantığıyla çalışır.
+
         /* 📌 Ne Yapıyor?
-RootElement → JSON’un en üst seviyesini temsil ediyor.
+    RootElement → JSON’un en üst seviyesini temsil ediyor.
 
-GetProperty("choices") → Yanıtta choices adında bir alan arıyor.
+    GetProperty("choices") → Yanıtta choices adında bir alan arıyor.
 
-[0] → İlk elemanı alıyor (genelde modelin ilk cevabı).
+    [0] → İlk elemanı alıyor (genelde modelin ilk cevabı).
 
-GetProperty("message") → GetProperty("content") → Mesajın içeriğine kadar iniyor.
+    GetProperty("message") → GetProperty("content") → Mesajın içeriğine kadar iniyor.
 
-GetString() → İçeriği string olarak alıyor.
+    GetString() → İçeriği string olarak alıyor.
 
-?? string.Empty → Eğer içerik null ise boş string döndür.
+    ?? string.Empty → Eğer içerik null ise boş string döndür.
 
-⚠️ Neden Var?
-Çünkü OpenAI Chat API gibi servisler yanıtı şu formatta döndürür:
+    ⚠️ Neden Var?
+    Çünkü OpenAI Chat API gibi servisler yanıtı şu formatta döndürür:
 
-json
-{
-  "choices": [
+    json
     {
-      "message": {
-        "role": "assistant",
-        "content": "Merhaba Emir!"
-      }
+      "choices": [
+        {
+          "message": {
+            "role": "assistant",
+            "content": "Merhaba Emir!"
+          }
+        }
+      ]
     }
-  ]
-}
-Bu zincir tam olarak "Merhaba Emir!" kısmını almak için yazılmıştır. 
-         */
+    Bu zincir tam olarak "Merhaba Emir!" kısmını almak için yazılmıştır. 
+             */
+
     }
 
     /* 🧩 Fonksiyon Akış Şeması --> Task<string> AnalyzeAsync(string prompt)

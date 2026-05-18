@@ -47,7 +47,7 @@ namespace OTOKAR.TaskAnalysis.DAL.Readers
                 var direktorluk = _csvReadersHelper.GetDirektorlukFromFileName(sourceFile);
 
                 using var reader = new StreamReader(file);  //StreamReader, dosyadaki metinleri satır satır veya komple okumanı sağlar.
-                // using python'daki wait gibi, dosyayı açar kapar tektek yazmamız gerekmez
+                // using: python'daki wait gibi, dosyayı açar kapar tektek yazmamız gerekmez
                 /*StreamReader(file): 
                  Bu, C#’ta bir dosyayı okumak için kullanılan sınıftır. 
                  file değişkeni, okunacak dosyanın yolunu veya dosya akışını temsil eder.   
