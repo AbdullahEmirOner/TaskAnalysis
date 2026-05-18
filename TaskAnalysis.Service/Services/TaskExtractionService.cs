@@ -6,7 +6,20 @@ namespace TaskAnalysis.Service.Services // BU sınıfın amacı birebir aynı g�
     public class TaskExtractionService : ITaskExtractionService
     {
         public List<string> ExtractTasks(string? text)
-        {
+        {            /* Bu fonksiyonun amacı:
+
+Metni temizlemek → satır sonları, madde işaretleri, tireler normalize edilir.
+
+Regex ile parçalamak → cümleleri veya numaralı görevleri ayırır.
+
+25+ karakterlik parçaları görev kabul eder.
+
+Normalize edip tekilleştirir.
+
+Eğer hiç görev çıkmazsa, tüm metni tek görev olarak döner.
+
+Sonuç: List<string> içinde benzersiz görev cümleleri.        
+*/
             if (string.IsNullOrWhiteSpace(text))
                 return new List<string>();
 
@@ -38,7 +51,7 @@ namespace TaskAnalysis.Service.Services // BU sınıfın amacı birebir aynı g�
 
         private static string NormalizeTask(string text)
         {
-            return Regex.Replace(text, @"\s+", " ").Trim();
+            return Regex.Replace(text, @"\s+", " ").Trim(); //  “Regular Expression” yani düzenli ifade demektir
         }
     }
 }

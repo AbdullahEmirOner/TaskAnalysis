@@ -25,11 +25,13 @@ Arama: Kullanıcı bir sorgu yaptığında, sistem vektörler arasındaki mesafe
 
 Sonuç: En yakın vektörler bulunarak benzer içerikler listelenir. 
 */
+
 public class VectorDbService : IVectorDbService
 {                    
     private readonly Dictionary<string, List<VectorItemDto>> _store = new(); // _store → dosya adı → embedding listesi şeklinde çalışan bir in‑memory index. 
-                                                                             // Vector DB2 ye geçiş yapacağız -->PINECONE, yapay zekâ uygulamalarında kullanılan bir vektör veritabanı hizmetidir.
-                                                                             // Büyük ölçekli vektör verilerini depolamak, yönetmek ve sorgulamak için optimize edilmiştir. Pinecone, özellikle makine öğrenmesi modelleri tarafından
+                                                                             // Vector DB'ye geçiş yapacağız -->PINECONE, yapay zekâ uygulamalarında kullanılan bir vektör veritabanı hizmetidir.
+                                                                             // Büyük ölçekli vektör verilerini depolamak, yönetmek ve sorgulamak için optimize edilmiştir.
+                                                                             // Pinecone, özellikle makine öğrenmesi modelleri tarafından
 
     public Task InsertAsync(string fileName, string text, float[] embedding, string sicilNo, string personName)
     {
@@ -67,11 +69,12 @@ public class VectorDbService : IVectorDbService
         var safeFileName = Path.GetFileName(fileName);
 
         // Case-insensitive eşleştirme
-        var key = _store.Keys
-            .FirstOrDefault(k => string.Equals(k, safeFileName, StringComparison.OrdinalIgnoreCase));
+        /* Bu satır, _store içindeki dosya adlarını case-insensitive karşılaştırarak doğru key’i buluyor.
+         * Böylece "Personel.csv" ile "personel.csv" aynı kabul ediliyor ve retrieval hatasız çalışıyor.
+         */
+        var key = _store.Keys.FirstOrDefault(k => string.Equals(k, safeFileName, StringComparison.OrdinalIgnoreCase));
 
-        if (key == null)
-            return Task.FromResult(new List<string>());
+        if (key == null) return Task.FromResult(new List<string>());
 
         var results = _store[key]
             .Select(x => new
@@ -92,8 +95,8 @@ public class VectorDbService : IVectorDbService
     {
         var normalizedFileName = Path.GetFileName(fileName);
 
-        if (!_store.TryGetValue(normalizedFileName, out var vectors))
-            return Task.FromResult(new List<string>());
+        if (!_store.TryGetValue(normalizedFileName, out var vectors)) return Task.FromResult(new List<string>()); /* Bu satır, _store dictionary’sinde aranan dosya adı yoksa hata atmamak için boş liste döndürür.
+                                                                                                                     Yani güvenli bir kontrol mekanizmasıdır.*/
 
         // önce kişiyi filtrele
         var personChunks = vectors
@@ -193,5 +196,4 @@ public class VectorDbService : IVectorDbService
     {
         return _store.Sum(x => x.Value.Count);
     }
-
 }

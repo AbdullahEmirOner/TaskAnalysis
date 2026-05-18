@@ -1,15 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
-using TaskAnalysis.Core.DTOs;
 using TaskAnalysis.Core.DTOs.ChatbotDTOs;
 using TaskAnalysis.Core.DTOs.DepartmentDTOs;
 using TaskAnalysis.Core.DTOs.DirectorateDTOs;
 using TaskAnalysis.Core.DTOs.PersonDTOs;
-using TaskAnalysis.Core.Entities;
 using TaskAnalysis.Core.Entities.CSVEntities;
 using TaskAnalysis.Core.Entities.RecordEntities;
 using TaskAnalysis.Core.Interfaces;
@@ -18,7 +15,6 @@ using TaskAnalysis.Core.Interfaces.ICsvReader;
 using TaskAnalysis.Core.Interfaces.IDbContext;
 using TaskAnalysis.Core.Interfaces.IRAG;
 using TaskAnalysis.Service.Builders;
-using TaskAnalysis.Service.Helpers;
 
 namespace TaskAnalysis.Service.AIService;
 
@@ -37,16 +33,15 @@ public class AnalysisService : IAnalysisService
     public AnalysisService(IRetrievalService retrieval ,IVectorDbService vectorDbService, IEmbeddingService embeddingService, ITaskExtractionService taskExtractionService,
         ICsvReaderService csvReaderService, IEmbeddingHelperService embeddingHelperService, IAiService aiService, IConfiguration configuration, IMemoryCache cache, IApplicationDbContext context, IParseHeleprService parseHeleprService)
     {
-        _csvReaderService = csvReaderService;
-        _embeddingHelperService = embeddingHelperService;   
+        _csvReaderService = csvReaderService; 
         _aiService = aiService;
         _configuration = configuration;
-        _cache = cache;
+        //_cache = cache;
         _embeddingService = embeddingService;
         _vectorDb = vectorDbService;
         _retrieval= retrieval;
         _context =context;
-        _taskExtractionService = taskExtractionService;
+        //_taskExtractionService = taskExtractionService;
         _parseHeleprService = parseHeleprService;
     }
 
@@ -285,9 +280,7 @@ public class AnalysisService : IAnalysisService
 
         List<string> chunks;
 
-        var safeFileName = !string.IsNullOrWhiteSpace(request.FileName)
-            ? Path.GetFileName(request.FileName)
-            : string.Empty;
+        var safeFileName = !string.IsNullOrWhiteSpace(request.FileName) ? Path.GetFileName(request.FileName) : string.Empty;
 
         if (!string.IsNullOrWhiteSpace(request.PersonName))
         {
@@ -311,11 +304,9 @@ public class AnalysisService : IAnalysisService
                 3);
         }
 
-        if (chunks == null || chunks.Count == 0)
-            return "Henüz indexlenmiş veri bulunamadı. Önce index-all-csv endpointini çalıştırın.";
+        if (chunks == null || chunks.Count == 0) return "Henüz indexlenmiş veri bulunamadı. Önce index-all-csv endpointini çalıştırın.";
 
-        if (chunks.Count == 1 && chunks[0].StartsWith("Bu dosyada"))
-            return chunks[0];
+        if (chunks.Count == 1 && chunks[0].StartsWith("Bu dosyada")) return chunks[0];
 
         var context = string.Join("\n\n", chunks);
 
@@ -329,13 +320,11 @@ public class AnalysisService : IAnalysisService
 
     public async Task<PersonAiAnalysisDto> AnalyzePersonBySicilNoAsync(string sicilNo)
     {
-        if (string.IsNullOrWhiteSpace(sicilNo))
-            throw new ArgumentException("Sicil numarası boş olamaz.");
+        if (string.IsNullOrWhiteSpace(sicilNo)) throw new ArgumentException("Sicil numarası boş olamaz.");
 
         sicilNo = sicilNo.Trim();
 
-        var existingDbResult = await _context.PersonAiAnalysisResults
-            .FirstOrDefaultAsync(x => x.SicilNo == sicilNo);
+        var existingDbResult = await _context.PersonAiAnalysisResults.FirstOrDefaultAsync(x => x.SicilNo == sicilNo);
 
         if (existingDbResult != null)
         {
@@ -361,9 +350,7 @@ public class AnalysisService : IAnalysisService
 
         var allRecords = _csvReaderService.ReadAllCsv(folderPath);
 
-        var personRecords = allRecords
-            .Where(x => x.SicilNo == sicilNo)
-            .ToList();
+        var personRecords = allRecords.Where(x => x.SicilNo == sicilNo).ToList();
 
         if (!personRecords.Any())
         {
@@ -444,7 +431,7 @@ public class AnalysisService : IAnalysisService
         await _context.SaveChangesAsync();
 
         return result;
-    }
+    } // Bu kod kötü bir kod ayar verilmeli 18.05.2026
 
 
     public List<DirectorateGroupedAiDto> GroupByBirimAndMudurluk( List<PersonAiAnalysisDto> personAnalyses)
@@ -592,7 +579,7 @@ public class AnalysisService : IAnalysisService
         var aiResponse = await _aiService.AnalyzeAsync(prompt);
 
         return aiResponse;
-    }
+    } // Kullanılmayan fonksiyon
 
 
     /*   public async Task<DirectorateTaskAnalysisDto> AnalyzeDirectorateTasksWithMemoryIndexAsync(string directorate, int chunkSize = 200)

@@ -1,18 +1,27 @@
 ﻿using TaskAnalysis.Core.DTOs.AIDTOs;
 using TaskAnalysis.Core.Entities.CSVEntities;
-using TaskAnalysis.Core.Interfaces;
 
+//------------------------------------------------------------ Bu Görevden Kim Sorumlu? --------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
 public class ResponsiblePersonMatcherService : IResponsiblePersonMatcherService
 {
-    public List<ResponsiblePersonDto> FindResponsiblePeople(
-        List<TaskRecord> records,
-        string text,
-        int take = 5)
+    /* bu fonksiyonun doğru çalışması için görev metnindeki kelimelerin birebir geçmesi gerekiyor.
+     * Çünkü embedding similarity yok, sadece keyword‑based Contains kontrolü var.
+     */
+
+    public List<ResponsiblePersonDto> FindResponsiblePeople(List<TaskRecord> records, string text, int take = 5)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            return new List<ResponsiblePersonDto>();
+        if (string.IsNullOrWhiteSpace(text)) return new List<ResponsiblePersonDto>();
 
         var keywords = text.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        /* StringSplitOptions.RemoveEmptyEntries
+Eğer arka arkaya birden fazla boşluk varsa, boş string ("") üretmez.
+
+Örn: "Ali yerleri" (3 boşluk) → normalde ["Ali", "", "", "yerleri"] olurdu.
+
+Ama RemoveEmptyEntries sayesinde → ["Ali", "yerleri"].
+         */
 
         return records
             .Where(x => !string.IsNullOrWhiteSpace(x.ad_soyad))
@@ -34,5 +43,10 @@ public class ResponsiblePersonMatcherService : IResponsiblePersonMatcherService
                 Reason = $"Eşleşme skoru: {x.Score}"
             })
             .ToList();
+
+        /* Bu fonksiyon, verilen görev metnindeki kelimeleri CSV kayıtlarındaki Amaç, Yetki, AnaSorumluluk alanlarıyla eşleştiriyor.
+         * En yüksek eşleşme skoruna sahip kişileri bulup ResponsiblePersonDto listesi döndürüyor.
+         * Yani senin sisteminde “bu görevden kim sorumlu?” sorusunun cevabını çıkarıyor.
+         */
     }
 }

@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using TaskAnalysis.Core.DTOs.AIDTOs;
 using TaskAnalysis.Core.DTOs.PersonDTOs;
 using TaskAnalysis.Core.Interfaces.IAIService;
 
 namespace TaskAnalysis.Service.Helpers
 {
-    public class ParseHeleprService : IParseHeleprService
+    public class ParseHeleprService : IParseHeleprService // Pars fonku bura dışında 2 farklı yerde de var (Controller ve EmbeddingHelperServicede), bir deüzen verilemli
     {
         public AiTaskAnalysisDto ParseTaskAnalysis(string json) // Parse etmek --> Bir veriyi belirli kurallara göre çözümlemek ve anlamlı parçalara ayırmak.
         {

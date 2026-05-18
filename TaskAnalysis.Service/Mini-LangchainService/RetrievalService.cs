@@ -1,10 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TaskAnalysis.Core.Entities.CSVEntities;
 using TaskAnalysis.Core.Interfaces;
 using TaskAnalysis.Core.Interfaces.ICsvReader;
@@ -12,7 +7,7 @@ using TaskAnalysis.Core.Interfaces.IRAG;
 
 namespace TaskAnalysis.Service.Mini_LangChainService
 {
-    public class RetrievalService : IRetrievalService
+    public class RetrievalService : IRetrievalService // Retrieval = “sorguya uygun bilgiyi bulma” adımıdır.
     {
         private readonly Dictionary<string, List<(string Text, float[] Vector)>> _vectorStore = new();
         private readonly ICsvReaderService _csvReaderService;
@@ -111,21 +106,22 @@ namespace TaskAnalysis.Service.Mini_LangChainService
             if (records == null || records.Count == 0)
                 throw new Exception("CSV okundu ama kayıt bulunamadı.");
 
-            _vectorDb.Clear(safeFileName);
+            _vectorDb.Clear(safeFileName); /* _vectorDb.Clear(safeFileName) → aynı dosya için daha önceki indexler siliniyor.
+                                              Böylece eski embedding’ler karışmıyor.*/
 
             var indexedChunkCount = 0;
 
             foreach (var record in records)
             {
                 var chunk = $@"
-Sicil No: {record.SicilNo}
-Ad Soyad: {record.ad_soyad}
-Birim: {record.Birim}
-Müdürlük: {record.Mudurluk}
-Amaç: {record.Amac}
-Yetki: {record.Yetki}
-Ana Sorumluluk: {record.AnaSorumluluk}
-";
+                Sicil No: {record.SicilNo}
+                Ad Soyad: {record.ad_soyad}
+                Birim: {record.Birim}
+                Müdürlük: {record.Mudurluk}
+                Amaç: {record.Amac}
+                Yetki: {record.Yetki}
+                Ana Sorumluluk: {record.AnaSorumluluk}
+                ";
 
                 var embedding = await _embeddingService.CreateEmbeddingAsync(chunk);
 
@@ -173,17 +169,28 @@ Ana Sorumluluk: {record.AnaSorumluluk}
             return chunks;
         }
 
-        /*  private double CosineSimilarity(float[] v1, float[] v2)
-          {
-              var dot = v1.Zip(v2, (a, b) => a * b).Sum();
-              var mag1 = Math.Sqrt(v1.Sum(x => x * x));
-              var mag2 = Math.Sqrt(v2.Sum(x => x * x));
+        /* 📊 Neden Önemli?
+Embedding için:
+Tek tek her satır yerine, 10 satırlık bloklardan embedding çıkarıyorsun.
 
-              return dot / (mag1 * mag2 + 1e-8);
-          }*/
+Avantajları:
+
+Token sayısı azalıyor.
+
+Daha anlamlı context blokları oluşuyor.
+
+VectorDB’de arama performansı artıyor.
+
+Dezavantajı:
+
+Çok büyük chunk olursa → LLM için fazla genel olur.
+
+Çok küçük chunk olursa → bağlam kaybolur.
+         */
 
         public async Task<List<string>> RetrieveRelevantChunks(string fileName, string question)
         {
+
             if (!_vectorStore.ContainsKey(fileName))
                 return new List<string>();
 
@@ -202,7 +209,5 @@ Ana Sorumluluk: {record.AnaSorumluluk}
 
             return scored;
         }
-
-
     }
 }

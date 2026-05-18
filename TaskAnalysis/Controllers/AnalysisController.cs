@@ -96,7 +96,7 @@ public class AnalysisController : ControllerBase
        Cache süresi olarak da 24 saat gibi uzun bir süre belirleyebiliriz, çünkü direktörlük görevleri günlük olarak değişmez.
        Ancak şu an için cache mekanizması eklemiyoruz, her seferinde güncel verilerle context oluşturacağız.
        Bu sayede, CSV dosyalarına yapılan herhangi bir güncelleme anında chatbot'un context'ine yansıyacak.
-       ------------------------ Es cümle tamamı ile denem amaçlı yazılmış güncel çıktılara hiçbir etkisi olmayan bir endpointtir, ileride kaldırılabilir ------------------------*/
+       ------------------------ Es cümle tamamı ile deneme amaçlı yazılmış güncel çıktılara hiçbir etkisi olmayan bir endpointtir, ileride kaldırılabilir ------------------------*/
 
         var folderPath = _configuration["CsvSettings:FolderPath"];
 

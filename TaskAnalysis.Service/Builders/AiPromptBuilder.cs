@@ -341,28 +341,28 @@ public static class AiPromptBuilder // Aynı işiyn çok benzerini yapan promtla
 
         sb.AppendLine("JSON schema:");
         sb.AppendLine("""
-{
-  "task": "Final summary of the department responsibilities",
-  "bestSolution": "AI, RPA, Hybrid, or another suitable solution type",
-  "automationRate": 0,
-  "recommendation": "Plain text final recommendation",
-  "projectIdeas": [
-    {
-      "task": "Concrete task/responsibility name",
-      "projectIdea": "Concrete automation or AI project idea",
-      "similarProjectName": "Similar real product/project name or Not Found",
-      "similarProjectLink": "https://... or Not Found"
-    }
-  ],
-  "responsiblePeople": [
-    {
-      "name": "Person name",
-      "department": "Person department",
-      "reason": "Why this person is relevant"
-    }
-  ]
-}
-""");
+        {
+          "task": "Final summary of the department responsibilities",
+          "bestSolution": "AI, RPA, Hybrid, or another suitable solution type",
+          "automationRate": 0,
+          "recommendation": "Plain text final recommendation",
+          "projectIdeas": [
+            {
+              "task": "Concrete task/responsibility name",
+              "projectIdea": "Concrete automation or AI project idea",
+              "similarProjectName": "Similar real product/project name or Not Found",
+              "similarProjectLink": "https://... or Not Found"
+            }
+          ],
+          "responsiblePeople": [
+            {
+              "name": "Person name",
+              "department": "Person department",
+              "reason": "Why this person is relevant"
+            }
+          ]
+        }
+        """);
 
         sb.AppendLine();
         sb.AppendLine("FIELD RULES:");
