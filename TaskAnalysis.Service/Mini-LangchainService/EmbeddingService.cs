@@ -16,8 +16,8 @@ public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya v
     {
         var vector = new float[VectorSize];
 
-        if (string.IsNullOrWhiteSpace(text))
-            return Task.FromResult(vector);
+        if (string.IsNullOrWhiteSpace(text)) return Task.FromResult(vector);
+
         /*string.IsNullOrWhiteSpace(text)
          Bir metot Task<float[]> döndürüyor → bu, asenkron sözleşme demek.
 
@@ -31,6 +31,7 @@ public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya v
         
          Task.FromResult(vector) → “Bu sonucu zaten hazır, beklemene gerek yok” demek.
          */
+
         var words = text
             .ToLowerInvariant()
             .Replace(".", " ")
@@ -43,11 +44,13 @@ public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya v
             .Replace(")", " ")
             .Replace("\"", " ")
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
         /* Split(' ', StringSplitOptions.RemoveEmptyEntries) → Metni boşluklardan ayırıyor, kelime listesi çıkarıyor.
 
          RemoveEmptyEntries → arka arkaya gelen boşlukları yok sayıyor.
          Örn: "fatura kontrolü" → ["fatura", "kontrolü"]
          */
+
         foreach (var word in words)
         {
             var index = Math.Abs(_helper.GetStableHash(word)) % VectorSize;
@@ -59,6 +62,7 @@ public class EmbeddingService : IEmbeddingService // Embedding, bir metni veya v
         return Task.FromResult(vector);
     }
 }
+
 /* AKIŞ
 Class her cümle için çalışıyor.
 
